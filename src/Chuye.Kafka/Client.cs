@@ -19,19 +19,19 @@ namespace Chuye.Kafka {
 
         static Client() {
             _responseTyps = new Type[17];
-            _responseTyps[(Int32)ApiKey.ProduceRequest]          = typeof(ProduceResponse);
-            _responseTyps[(Int32)ApiKey.FetchRequest]            = typeof(FetchResponse);
-            _responseTyps[(Int32)ApiKey.OffsetRequest]           = typeof(OffsetResponse);
-            _responseTyps[(Int32)ApiKey.MetadataRequest]         = typeof(MetadataResponse);
-            _responseTyps[(Int32)ApiKey.OffsetCommitRequest]     = typeof(OffsetCommitResponse);
-            _responseTyps[(Int32)ApiKey.OffsetFetchRequest]      = typeof(OffsetFetchResponse);
+            _responseTyps[(Int32)ApiKey.ProduceRequest] = typeof(ProduceResponse);
+            _responseTyps[(Int32)ApiKey.FetchRequest] = typeof(FetchResponse);
+            _responseTyps[(Int32)ApiKey.OffsetRequest] = typeof(OffsetResponse);
+            _responseTyps[(Int32)ApiKey.MetadataRequest] = typeof(MetadataResponse);
+            _responseTyps[(Int32)ApiKey.OffsetCommitRequest] = typeof(OffsetCommitResponse);
+            _responseTyps[(Int32)ApiKey.OffsetFetchRequest] = typeof(OffsetFetchResponse);
             _responseTyps[(Int32)ApiKey.GroupCoordinatorRequest] = typeof(GroupCoordinatorResponse);
-            _responseTyps[(Int32)ApiKey.JoinGroupRequest]        = typeof(JoinGroupResponse);
-            _responseTyps[(Int32)ApiKey.HeartbeatRequest]        = typeof(HeartbeatResponse);
-            _responseTyps[(Int32)ApiKey.LeaveGroupRequest]       = typeof(LeaveGroupResponse);
-            _responseTyps[(Int32)ApiKey.SyncGroupRequest]        = typeof(SyncGroupResponse);
-            _responseTyps[(Int32)ApiKey.DescribeGroupsRequest]   = typeof(DescribeGroupsResponse);
-            _responseTyps[(Int32)ApiKey.ListGroupsRequest]       = typeof(ListGroupsResponse);
+            _responseTyps[(Int32)ApiKey.JoinGroupRequest] = typeof(JoinGroupResponse);
+            _responseTyps[(Int32)ApiKey.HeartbeatRequest] = typeof(HeartbeatResponse);
+            _responseTyps[(Int32)ApiKey.LeaveGroupRequest] = typeof(LeaveGroupResponse);
+            _responseTyps[(Int32)ApiKey.SyncGroupRequest] = typeof(SyncGroupResponse);
+            _responseTyps[(Int32)ApiKey.DescribeGroupsRequest] = typeof(DescribeGroupsResponse);
+            _responseTyps[(Int32)ApiKey.ListGroupsRequest] = typeof(ListGroupsResponse);
         }
 
         public Client(Option option) {
@@ -53,13 +53,18 @@ namespace Chuye.Kafka {
                 socket.Connect(_host, _port);
                 socket.Send(requestBytes.Array, requestBytes.Offset, SocketFlags.None);
 
+                var produceRequest = request as ProduceRequest;
+                if (produceRequest != null && produceRequest.RequiredAcks == 0) {
+                    return null;
+                }
+
                 const Int32 lengthBytesSize = 4;
                 var beginningBytesReceived = socket.Receive(responseBuffer.Buffer, lengthBytesSize, SocketFlags.None);
                 if (beginningBytesReceived < lengthBytesSize) {
                     throw new SocketException((Int32)SocketError.SocketError);
                 }
                 var expectedBodyBytesSize = new Reader(responseBuffer.Buffer).ReadInt32();
-                Debug.WriteLine("Expected body bytes size is {0}", expectedBodyBytesSize);
+                //Debug.WriteLine("Expected body bytes size is {0}", expectedBodyBytesSize);
                 var receivedBodyBytesSize = 0;
 
                 while (receivedBodyBytesSize < expectedBodyBytesSize) {
@@ -69,7 +74,7 @@ namespace Chuye.Kafka {
                         expectedBodyBytesSize - receivedBodyBytesSize,
                         SocketFlags.None
                     );
-                    Debug.WriteLine("Actually body bytes received {0}", receivedBodyBytesSize);
+                    //Debug.WriteLine("Actually body bytes received {0}", receivedBodyBytesSize);
                 }
                 socket.Close();
 

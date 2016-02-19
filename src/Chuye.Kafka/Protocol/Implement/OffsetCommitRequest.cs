@@ -22,7 +22,7 @@ namespace Chuye.Kafka.Protocol.Implement {
         public OffsetCommitRequestTopicPartition[] Partitions { get; set; }
 
         public OffsetCommitRequest()
-            : base(RequestApiKey.OffsetCommitRequest) {
+            : base(Protocol.ApiKey.OffsetCommitRequest) {
         }
 
         protected override void SerializeContent(Writer writer) {

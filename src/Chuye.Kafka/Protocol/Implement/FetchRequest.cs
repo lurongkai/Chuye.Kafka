@@ -20,7 +20,7 @@ namespace Chuye.Kafka.Protocol.Implement {
         public TopicPartition[] TopicPartitions { get; set; }
 
         public FetchRequest()
-            : base(RequestApiKey.FetchRequest) {
+            : base(Protocol.ApiKey.FetchRequest) {
         }
 
         protected override void SerializeContent(Writer writer) {

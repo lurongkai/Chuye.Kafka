@@ -11,7 +11,7 @@ namespace Chuye.Kafka.Protocol.Implement.Management {
         public String GroupId { get; set; }
 
         public GroupCoordinatorRequest()
-            : base(RequestApiKey.GroupCoordinatorRequest) {
+            : base(Protocol.ApiKey.GroupCoordinatorRequest) {
         }
 
         protected override void SerializeContent(Writer writer) {

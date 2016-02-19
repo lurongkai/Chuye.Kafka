@@ -68,7 +68,7 @@
     <Compile Include="Protocol\MessageSets.cs" />
     <Compile Include="Protocol\Reader.cs" />
     <Compile Include="Protocol\Request.cs" />
-    <Compile Include="Protocol\RequestApiKey.cs" />
+    <Compile Include="Protocol\ApiKey.cs" />
     <Compile Include="Protocol\Response.cs" />
     <Compile Include="Protocol\Writer.cs" />
     <Compile Include="Utils\DateTimeExtension.cs" />

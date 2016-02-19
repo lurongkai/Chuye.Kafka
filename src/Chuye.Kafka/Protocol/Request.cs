@@ -33,7 +33,7 @@ namespace Chuye.Kafka.Protocol {
         public Int32 CorrelationId { get; private set; }
         public String ClientId { get; private set; }
 
-        public Request(RequestApiKey apiKey) {
+        public Request(ApiKey apiKey) {
             ApiKey = (Int16)apiKey;
             ApiVersion = 0;
             CorrelationId = System.Threading.Interlocked.Increment(ref CurrentCorrelationId);

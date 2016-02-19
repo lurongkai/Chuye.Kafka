@@ -16,7 +16,7 @@ namespace Chuye.Kafka.Protocol.Implement {
         public OffsetsRequestTopicPartition[] Partitions { get; set; }
 
         public OffsetRequest()
-            : base(RequestApiKey.OffsetRequest) {
+            : base(Protocol.ApiKey.OffsetRequest) {
         }
 
         protected override void SerializeContent(Writer writer) {

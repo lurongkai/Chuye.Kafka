@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Chuye.Kafka.Protocol.Implement.Management {
     public class HeartbeatRequest : Request {
         public HeartbeatRequest()
-            : base(RequestApiKey.HeartbeatRequest) {
+            : base(Protocol.ApiKey.HeartbeatRequest) {
         }
 
         protected override void SerializeContent(Writer writer) {

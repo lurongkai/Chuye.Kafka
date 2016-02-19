@@ -8,7 +8,7 @@ namespace Chuye.Kafka.Protocol.Implement.Management {
     public class SyncGroupRequest : Request {
 
         public SyncGroupRequest() 
-            : base(RequestApiKey.SyncGroupRequest) {
+            : base(Protocol.ApiKey.SyncGroupRequest) {
         }
 
         protected override void SerializeContent(Writer writer) {

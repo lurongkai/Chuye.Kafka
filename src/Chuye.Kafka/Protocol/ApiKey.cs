@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Chuye.Kafka.Protocol {
-    public enum RequestApiKey : Int16 {
+    public enum ApiKey : Int16 {
         //Non-user facing control APIs 4-7 
         ProduceRequest = 0,
         FetchRequest = 1,

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Chuye.Kafka.Protocol.Implement.Management {
     public class JoinGroupRequest : Request {
         public JoinGroupRequest()
-            : base(RequestApiKey.JoinGroupRequest) {
+            : base(Protocol.ApiKey.JoinGroupRequest) {
         }
 
         protected override void SerializeContent(Writer writer) {

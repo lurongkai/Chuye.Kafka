@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Chuye.Kafka.Protocol.Implement.Management {
     public class LeaveGroupRequest : Request {
         public LeaveGroupRequest()
-            : base(RequestApiKey.LeaveGroupRequest) {
+            : base(Protocol.ApiKey.LeaveGroupRequest) {
 
         }
 

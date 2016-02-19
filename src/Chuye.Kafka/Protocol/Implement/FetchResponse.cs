@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Chuye.Kafka.Protocol {
+namespace Chuye.Kafka.Protocol.Implement {
     //FetchResponse => [TopicName [Partition ErrorCode HighwaterMarkOffset MessageSetSize MessageSet]]
     //  TopicName => string
     //  Partition => int32

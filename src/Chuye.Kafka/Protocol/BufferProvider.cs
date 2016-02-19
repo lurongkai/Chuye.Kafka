@@ -6,9 +6,12 @@ using System.Threading.Tasks;
 using System.Collections.Concurrent;
 
 namespace Chuye.Kafka.Protocol {
+    interface IBufferWraper : IDisposable {
+        Byte[] Buffer { get; }
+    }
+
     interface IBufferProvider {
-        Byte[] Borrow();
-        void GiveBack(Byte[] buffer);
+        IBufferWraper Borrow();
     }
 
     class BufferProvider : IBufferProvider {
@@ -19,23 +22,41 @@ namespace Chuye.Kafka.Protocol {
             _buffers = new ConcurrentStack<WeakReference>();
         }
 
-        public Byte[] Borrow() {
+        public IBufferWraper Borrow() {
             WeakReference item;
             while (!_buffers.IsEmpty) {
                 if (_buffers.TryPop(out item) && item.IsAlive) {
-                    return (Byte[])item.Target;
+                    return new BufferWraper(this, (Byte[])item.Target);
                 }
             }
 
             var buffer = new Byte[Capacity];
             item = new WeakReference(buffer, false);
             _buffers.Push(item);
-            return buffer;
+            return new BufferWraper(this, buffer);
         }
 
-        public void GiveBack(Byte[] buffer) {
-            var item = new WeakReference(buffer, false);
+        internal void GiveBack(IBufferWraper buffer) {
+            var item = new WeakReference(buffer.Buffer, false);
             _buffers.Push(item);
+        }
+
+        internal class BufferWraper : IBufferWraper {
+            private readonly IBufferProvider _bufferProvider;
+            private readonly Byte[] _buffer;
+
+            public BufferWraper(IBufferProvider bufferProvider, Byte[] buffer) {
+                _bufferProvider = bufferProvider;
+                _buffer = buffer;
+            }
+
+            public Byte[] Buffer {
+                get { return _buffer; }
+            }
+
+            public void Dispose() {
+                ((BufferProvider)_bufferProvider).GiveBack(this);
+            }
         }
     }
 }

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Chuye.Kafka.Protocol.Implement {
     //MetadataResponse => [Broker][TopicMetadata]
-    class MetadataResponse : Response {
+    public class MetadataResponse : Response {
         public Broker[] Brokers { get; set; }
         public TopicMetadata[] TopicMetadatas { get; set; }
 
@@ -14,12 +14,12 @@ namespace Chuye.Kafka.Protocol.Implement {
             Brokers = new Broker[reader.ReadInt32()];
             for (int i = 0; i < Brokers.Length; i++) {
                 Brokers[i] = new Broker();
-                Brokers[i].Read(reader);
+                Brokers[i].FetchFrom(reader);
             }
             TopicMetadatas = new TopicMetadata[reader.ReadInt32()];
             for (int i = 0; i < TopicMetadatas.Length; i++) {
                 TopicMetadatas[i] = new TopicMetadata();
-                TopicMetadatas[i].Read(reader);
+                TopicMetadatas[i].FetchFrom(reader);
             }
         }
     }
@@ -28,12 +28,12 @@ namespace Chuye.Kafka.Protocol.Implement {
     //  NodeId => int32
     //  Host => string
     //  Port => int32
-    class Broker : IReadable {
+    public class Broker : IReadable {
         public Int32 NodeId { get; set; }
         public String Host { get; set; }
         public Int32 Port { get; set; }
 
-        public void Read(Reader reader) {
+        public void FetchFrom(Reader reader) {
             NodeId = reader.ReadInt32();
             Host = reader.ReadString();
             Port = reader.ReadInt32();
@@ -42,7 +42,7 @@ namespace Chuye.Kafka.Protocol.Implement {
 
     //TopicMetadata => TopicErrorCode TopicName [PartitionMetadata]
     //  TopicErrorCode => int16
-    class TopicMetadata : IReadable {
+    public class TopicMetadata : IReadable {
         //Possible Error Codes: 
         // UnknownTopic (3)
         // LeaderNotAvailable (5)
@@ -52,13 +52,13 @@ namespace Chuye.Kafka.Protocol.Implement {
         public String TopicName { get; set; }
         public PartitionMetadata[] PartitionMetadatas { get; set; }
 
-        public void Read(Reader reader) {
+        public void FetchFrom(Reader reader) {
             TopicErrorCode = (ErrorCode)reader.ReadInt16();
             TopicName = reader.ReadString();
             PartitionMetadatas = new PartitionMetadata[reader.ReadInt32()];
             for (int i = 0; i < PartitionMetadatas.Length; i++) {
                 PartitionMetadatas[i] = new PartitionMetadata();
-                PartitionMetadatas[i].Read(reader);
+                PartitionMetadatas[i].FetchFrom(reader);
             }
         }
     }
@@ -69,14 +69,14 @@ namespace Chuye.Kafka.Protocol.Implement {
     //  Leader => int32
     //  Replicas => [int32]
     //  Isr => [int32]  
-    class PartitionMetadata : IReadable {
+    public class PartitionMetadata : IReadable {
         public Int16 PartitionErrorCode { get; set; }
         public Int32 PartitionId { get; set; }
         public Int32 Leader { get; set; }
         public Int32[] Replicas { get; set; }
         public Int32[] Isr { get; set; }
 
-        public void Read(Reader reader) {
+        public void FetchFrom(Reader reader) {
             PartitionErrorCode = reader.ReadInt16();
             PartitionId = reader.ReadInt32();
             Leader = reader.ReadInt32();

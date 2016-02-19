@@ -9,6 +9,10 @@ namespace Chuye.Kafka.Protocol {
         private Int32 _offset;
         private readonly Byte[] _buffer;
 
+        public Int32 Offset {
+            get { return _offset; }
+        }
+
         public Reader(Byte[] buffer) {
             _offset = 0;
             _buffer = buffer;

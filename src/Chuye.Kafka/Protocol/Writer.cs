@@ -2,6 +2,10 @@
 using System.Text;
 
 namespace Chuye.Kafka.Protocol {
+    public interface ICompute : IDisposable {
+        Int32 Value { get; }
+    }
+
 
     public class Writer {
         private readonly Byte[] _bytes;
@@ -11,18 +15,18 @@ namespace Chuye.Kafka.Protocol {
             _bytes = bytes;
             _offset = 0;
         }
-        
+
         public ArraySegment<Byte> Bytes {
             get { return new ArraySegment<byte>(_bytes, _offset, _offset); }
         }
-        
-        public IDisposable PrepareCrc() {
+
+        public ICompute PrepareCrc() {
             var previousPosition = _offset;
             Write(0);
             return new CrcWriter(this, previousPosition);
         }
 
-        public IDisposable PrepareLength() {
+        public ICompute PrepareLength() {
             var previousPosition = _offset;
             Write(0);
             return new PositionWriter(this, previousPosition);
@@ -66,14 +70,16 @@ namespace Chuye.Kafka.Protocol {
             return this;
         }
 
-        public Writer Write(Byte[] value) {
-            if (value == null) {
+        public Writer Write(Byte[] bytes) {
+            if (bytes == null) {
                 Write(-1);
                 return this;
             }
 
-            Write((Int32)value.Length);
-            Write(value, false);
+            Write((Int32)bytes.Length);
+            bytes.CopyTo(_bytes, _offset);
+            //Array.Copy(_bytes, 0, _bytes, _offset++, _bytes.Length);
+            _offset += bytes.Length;
             return this;
         }
 
@@ -84,22 +90,18 @@ namespace Chuye.Kafka.Protocol {
             }
 
             Write((Int16)value.Length);
-            Write(Encoding.UTF8.GetBytes(value), false);
+            var bytes = Encoding.UTF8.GetBytes(value);
+            bytes.CopyTo(_bytes, _offset);
+            //Array.Copy(_bytes, 0, _bytes, _offset++, _bytes.Length);
+            _offset += value.Length;
             return this;
         }
 
-        private void Write(Byte[] bytes, Boolean withLength) {
-            if (withLength) {
-                Write(_bytes.Length);
-            }
-            bytes.CopyTo(_bytes, _offset);
-            //Array.Copy(_bytes, 0, _bytes, _offset++, _bytes.Length);
-            _offset += bytes.Length;
-        }
-
-        private class CrcWriter : IDisposable {
+        private class CrcWriter : ICompute {
             private Int32 _previousPosition;
             private Writer _writer;
+
+            public Int32 Value { get; private set; }
 
             public CrcWriter(Writer writer, Int32 previousPosition) {
                 _writer = writer;
@@ -109,16 +111,20 @@ namespace Chuye.Kafka.Protocol {
             public void Dispose() {
                 var currentPosition = _writer._offset;
                 var subsequent = (Int32)(currentPosition - _previousPosition - 4);
-                var crc = KafkaNet.Common.Crc32Provider.Compute(_writer._bytes, _previousPosition + 4, subsequent);
+                var crc = (Int32)KafkaNet.Common.Crc32Provider.Compute(_writer._bytes, _previousPosition + 4, subsequent);
                 _writer._offset = _previousPosition;
-                _writer.Write((Int32)crc);
+                _writer.Write(crc);
                 _writer._offset = currentPosition;
+
+                Value = crc;
             }
         }
 
-        private class PositionWriter : IDisposable {
+        private class PositionWriter : ICompute {
             private Int32 _previousPosition;
             private Writer _writer;
+
+            public Int32 Value { get; private set; }
 
             public PositionWriter(Writer writer, Int32 previousPosition) {
                 _writer = writer;
@@ -127,10 +133,12 @@ namespace Chuye.Kafka.Protocol {
 
             public void Dispose() {
                 var currentPosition = _writer._offset;
-                var subsequent = (Int32)(currentPosition - _previousPosition - 4);
+                var length = (Int32)(currentPosition - _previousPosition - 4);
                 _writer._offset = _previousPosition;
-                _writer.Write(subsequent);
+                _writer.Write(length);
                 _writer._offset = currentPosition;
+
+                Value = length;
             }
         }
     }

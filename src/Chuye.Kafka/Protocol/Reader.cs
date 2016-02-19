@@ -32,7 +32,7 @@ namespace Chuye.Kafka.Protocol {
             }
             var buffer = new Byte[length];
             for (int i = 0; i < length; i++) {
-                buffer[length - i - 1] = _buffer[_offset++];
+                buffer[i] = _buffer[_offset++];
             }
             return buffer;
         }

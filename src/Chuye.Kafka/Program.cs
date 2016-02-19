@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -13,15 +14,15 @@ namespace Chuye.Kafka {
         const String TopicName = "test6";
 
         static void Main(string[] args) {
-            //ProceedMetadata();
-            //ProceedProduce();
-            //ProceedFetch();
-            //ProceedOffset();
-            //ProceedGroupCoordinator();
-            //ProceedOffsetCommit();
-            //ProceedOffsetFetch();
-            ProceedListGroups_DescribeGroups();
+            var producer = new Producer();
+            //producer.Post(TopicName, "key1", "value1");
 
+            var consumer = new Consumer();
+            var messages = consumer.Fetch(TopicName, 0L);
+            foreach(var msg in messages) {
+                Console.WriteLine(msg);
+            }
+            
             if (Debugger.IsAttached) {
                 Console.WriteLine("Press <Enter> to exit");
                 Console.ReadLine();

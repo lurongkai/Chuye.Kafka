@@ -33,6 +33,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -42,7 +43,20 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Protocol\ApiKey.cs" />
+    <Compile Include="Utils\DataAnnotationHelper.cs" />
     <Compile Include="Protocol\BufferProvider.cs" />
+    <Compile Include="Protocol\Implement\Management\DescribeGroupsRequest.cs" />
+    <Compile Include="Protocol\Implement\Management\DescribeGroupsResponse.cs" />
+    <Compile Include="Protocol\Implement\Management\GroupCoordinatorResponse.cs" />
+    <Compile Include="Protocol\Implement\Management\LeaveGroupResponse.cs" />
+    <Compile Include="Protocol\Implement\Management\HeartbeatResponse.cs" />
+    <Compile Include="Protocol\Implement\Management\JoinGroupResponse.cs" />
+    <Compile Include="Protocol\Implement\Management\ListGroupsRequest.cs" />
+    <Compile Include="Protocol\Implement\Management\ListGroupsResponse.cs" />
+    <Compile Include="Protocol\Implement\Management\SyncGroupResponse.cs" />
+    <Compile Include="Protocol\Implement\OffsetCommitResponse.cs" />
+    <Compile Include="Protocol\Implement\OffsetFetchResponse.cs" />
     <Compile Include="Utils\Crc32Provider.cs" />
     <Compile Include="Protocol\ErrorCode.cs" />
     <Compile Include="Protocol\Implement\FetchResponse.cs" />
@@ -65,7 +79,6 @@
     <Compile Include="Protocol\MessageSets.cs" />
     <Compile Include="Protocol\Reader.cs" />
     <Compile Include="Protocol\Request.cs" />
-    <Compile Include="Protocol\RequestApiKey.cs" />
     <Compile Include="Protocol\Response.cs" />
     <Compile Include="Protocol\Writer.cs" />
     <Compile Include="Utils\DateTimeExtension.cs" />

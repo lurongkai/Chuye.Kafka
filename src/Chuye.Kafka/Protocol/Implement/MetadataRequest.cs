@@ -11,7 +11,7 @@ namespace Chuye.Kafka.Protocol.Implement {
         public String[] TopicNames { get; set; }
 
         public MetadataRequest()
-            : base(RequestApiKey.MetadataRequest) {
+            : base(Protocol.ApiKey.MetadataRequest) {
         }
 
         protected override void SerializeContent(Writer writer) {

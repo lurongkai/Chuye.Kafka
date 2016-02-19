@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Chuye.Kafka.Protocol;
 using Chuye.Kafka.Protocol.Implement;
+using Chuye.Kafka.Protocol.Implement.Management;
 using Chuye.Kafka.Utils;
 
 namespace Chuye.Kafka {
@@ -15,11 +16,32 @@ namespace Chuye.Kafka {
             //ProceedMetadata();
             //ProceedProduce();
             //ProceedFetch();
-            ProceedOffset();
+            //ProceedOffset();
+            //ProceedGroupCoordinator();
+            //ProceedOffsetCommit();
+            //ProceedOffsetFetch();
+            ProceedListGroups_DescribeGroups();
 
             if (Debugger.IsAttached) {
                 Console.WriteLine("Press <Enter> to exit");
                 Console.ReadLine();
+            }
+        }
+
+        private static void ProceedListGroups_DescribeGroups() {
+            {
+                var request = new ListGroupsRequest();
+                var buffer = InvokeRequest(request);
+                var response = new ListGroupsResponse();
+                response.Read(buffer);
+            }
+
+            {
+                var request = new DescribeGroupsRequest();
+                request.GroupId = new[] { "xx" };
+                var buffer = InvokeRequest(request);
+                var response = new DescribeGroupsResponse();
+                response.Read(buffer);
             }
         }
 
@@ -108,6 +130,56 @@ namespace Chuye.Kafka {
             response.Read(buffer);
         }
 
+        static void ProceedGroupCoordinator() {
+            var request = new GroupCoordinatorRequest();
+            //request.GroupId = String.Empty;
+            request.GroupId = "100";
+
+            var buffer = InvokeRequest(request);
+            var response = new GroupCoordinatorResponse();
+            response.Read(buffer);
+        }
+
+        static void ProceedOffsetCommit() {
+            var request = new OffsetCommitRequest();
+            request.ApiVersion = 2;
+            request.ConsumerGroupId = "cg1";
+            //request.ConsumerGroupGenerationId = 1;
+            request.ConsumerId = "c1";
+            request.RetentionTime = 0;
+            request.Partitions = new OffsetCommitRequestTopicPartition[1];
+            var partition
+                = request.Partitions[0]
+                = new OffsetCommitRequestTopicPartition();
+            partition.TopicName = TopicName;
+            partition.Details = new OffsetCommitRequestTopicPartitionDetail[1];
+            var detail
+                = partition.Details[0]
+                = new OffsetCommitRequestTopicPartitionDetail();
+            detail.Partition = 0;
+            detail.Offset = 1;
+
+
+            var buffer = InvokeRequest(request);
+            var response = new OffsetCommitResponse();
+            response.Read(buffer);
+        }
+
+        static void ProceedOffsetFetch() {
+            var request = new OffsetFetchRequest();
+            request.ConsumerGroup = "default";
+            request.TopicPartitions = new OffsetFetchRequestTopicPartition[1];
+            var topicPartition
+                = request.TopicPartitions[0]
+                = new OffsetFetchRequestTopicPartition();
+            topicPartition.TopicName = TopicName;
+            topicPartition.Partitions = new[] { 0 };
+
+            var buffer = InvokeRequest(request);
+            var response = new OffsetFetchResponse();
+            response.Read(buffer);
+        }
+
         static ArraySegment<Byte> InvokeRequest(Request request) {
             var bufferProvider = new BufferProvider();
             using (var socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
@@ -124,7 +196,10 @@ namespace Chuye.Kafka {
                 socket.Send(requestBytes.Array, requestBytes.Offset, SocketFlags.None);
 
                 const Int32 lengthBytesSize = 4;
-                socket.Receive(responseBuffer.Buffer, lengthBytesSize, SocketFlags.None);
+                var beginningBytesReceived = socket.Receive(responseBuffer.Buffer, lengthBytesSize, SocketFlags.None);
+                if (beginningBytesReceived < lengthBytesSize) {
+                    throw new SocketException((Int32)SocketError.SocketError);
+                }
                 var expectedBodyBytesSize = new Reader(responseBuffer.Buffer).ReadInt32();
                 Console.WriteLine("Expected body bytes size is {0}", expectedBodyBytesSize);
 

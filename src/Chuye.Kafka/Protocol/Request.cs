@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Chuye.Kafka.Utils;
 
 namespace Chuye.Kafka.Protocol {
 
@@ -28,19 +29,24 @@ namespace Chuye.Kafka.Protocol {
         private static Int32 CurrentCorrelationId;
 
         public Int32 Size { get; private set; }
-        public Int16 ApiKey { get; private set; }
-        public Int16 ApiVersion { get; private set; }
+        public ApiKey ApiKey { get; private set; }
+        public Int16 ApiVersion { get; set; }
         public Int32 CorrelationId { get; private set; }
         public String ClientId { get; private set; }
 
-        public Request(RequestApiKey apiKey) {
-            ApiKey = (Int16)apiKey;
+        public Request(ApiKey apiKey) {
+            ApiKey = apiKey;
             ApiVersion = 0;
             CorrelationId = System.Threading.Interlocked.Increment(ref CurrentCorrelationId);
             ClientId = "Kafka-Net";
         }
 
+        protected void Verify() {
+            DataAnnotationHelper.ThrowIfInvalid(this);
+        }
+
         public virtual ArraySegment<Byte> Serialize(Byte[] bytes) {
+            Verify();
             var writer = new Writer(bytes);
             SaveTo(writer);
             return writer.Bytes;
@@ -48,7 +54,7 @@ namespace Chuye.Kafka.Protocol {
 
         public virtual void SaveTo(Writer writer) {
             using (writer.PrepareLength()) {
-                writer.Write(ApiKey);
+                writer.Write((Int16)ApiKey);
                 writer.Write(ApiVersion);
                 writer.Write(CorrelationId);
                 writer.Write(ClientId);

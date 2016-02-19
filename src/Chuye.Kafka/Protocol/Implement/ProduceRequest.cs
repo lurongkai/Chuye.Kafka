@@ -12,7 +12,7 @@ namespace Chuye.Kafka.Protocol.Implement {
 //  MessageSetSize => int32
     public class ProduceRequest : Request {
         public ProduceRequest()
-            : base(RequestApiKey.ProduceRequest) {
+            : base(Protocol.ApiKey.ProduceRequest) {
         }
 
         public Int16 RequiredAcks { get; set; }

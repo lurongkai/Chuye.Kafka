@@ -34,6 +34,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -43,7 +44,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Protocol\ApiKey.cs" />
+    <Compile Include="Client.cs" />
+    <Compile Include="Consumer.cs" />
+    <Compile Include="KeyedMessage.cs" />
+    <Compile Include="Option.cs" />
+    <Compile Include="Producer.cs" />
     <Compile Include="Utils\DataAnnotationHelper.cs" />
     <Compile Include="Protocol\BufferProvider.cs" />
     <Compile Include="Protocol\Implement\Management\DescribeGroupsRequest.cs" />
@@ -79,6 +84,7 @@
     <Compile Include="Protocol\MessageSets.cs" />
     <Compile Include="Protocol\Reader.cs" />
     <Compile Include="Protocol\Request.cs" />
+    <Compile Include="Protocol\ApiKey.cs" />
     <Compile Include="Protocol\Response.cs" />
     <Compile Include="Protocol\Writer.cs" />
     <Compile Include="Utils\DateTimeExtension.cs" />

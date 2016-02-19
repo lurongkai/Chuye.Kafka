@@ -29,7 +29,7 @@ namespace Chuye.Kafka.Protocol {
 
         public Int32 Size { get; private set; }
         public Int16 ApiKey { get; private set; }
-        public Int16 ApiVersion { get; private set; }
+        public Int16 ApiVersion { get; set; }
         public Int32 CorrelationId { get; private set; }
         public String ClientId { get; private set; }
 

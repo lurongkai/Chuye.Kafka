@@ -43,6 +43,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Protocol\BufferProvider.cs" />
+    <Compile Include="Protocol\Implement\Management\GroupCoordinatorResponse.cs" />
+    <Compile Include="Protocol\Implement\OffsetCommitResponse.cs" />
+    <Compile Include="Protocol\Implement\OffsetFetchResponse.cs" />
     <Compile Include="Utils\Crc32Provider.cs" />
     <Compile Include="Protocol\ErrorCode.cs" />
     <Compile Include="Protocol\Implement\FetchResponse.cs" />

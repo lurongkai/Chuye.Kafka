@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Chuye.Kafka.Utils;
 
 namespace Chuye.Kafka.Protocol {
 
@@ -40,7 +41,12 @@ namespace Chuye.Kafka.Protocol {
             ClientId = "Kafka-Net";
         }
 
+        protected void Verify() {
+            DataAnnotationHelper.ThrowIfInvalid(this);
+        }
+
         public virtual ArraySegment<Byte> Serialize(Byte[] bytes) {
+            Verify();
             var writer = new Writer(bytes);
             SaveTo(writer);
             return writer.Bytes;

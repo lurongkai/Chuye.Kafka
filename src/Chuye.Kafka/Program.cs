@@ -18,13 +18,30 @@ namespace Chuye.Kafka {
             //ProceedFetch();
             //ProceedOffset();
             //ProceedGroupCoordinator();
-            ProceedOffsetCommit();
+            //ProceedOffsetCommit();
             //ProceedOffsetFetch();
-            
+            ProceedListGroups_DescribeGroups();
 
             if (Debugger.IsAttached) {
                 Console.WriteLine("Press <Enter> to exit");
                 Console.ReadLine();
+            }
+        }
+
+        private static void ProceedListGroups_DescribeGroups() {
+            {
+                var request = new ListGroupsRequest();
+                var buffer = InvokeRequest(request);
+                var response = new ListGroupsResponse();
+                response.Read(buffer);
+            }
+
+            {
+                var request = new DescribeGroupsRequest();
+                request.GroupId = new[] { "xx" };
+                var buffer = InvokeRequest(request);
+                var response = new DescribeGroupsResponse();
+                response.Read(buffer);
             }
         }
 

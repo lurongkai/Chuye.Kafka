@@ -99,9 +99,9 @@ namespace Chuye.Kafka {
             var detail
                 = partition.Details[0]
                 = new OffsetsRequestTopicPartitionDetail();
-            detail.Time = -1;
-            //detail.Time = (Int64)TimeSpan.FromDays(2D).TotalMilliseconds;
             detail.Partition = 0;
+            detail.Time = -1;
+            detail.MaxNumberOfOffsets = 1;
 
             var buffer = InvokeRequest(request);
             var response = new OffsetResponse();

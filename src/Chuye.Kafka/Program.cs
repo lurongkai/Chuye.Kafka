@@ -1,14 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 using Chuye.Kafka.Protocol;
 using Chuye.Kafka.Protocol.Implement;
+using Chuye.Kafka.Utils;
 
 namespace Chuye.Kafka {
     class Program {
@@ -17,7 +14,8 @@ namespace Chuye.Kafka {
         static void Main(string[] args) {
             //ProceedMetadata();
             //ProceedProduce();
-            ProceedFetch();
+            //ProceedFetch();
+            ProceedOffset();
 
             if (Debugger.IsAttached) {
                 Console.WriteLine("Press <Enter> to exit");
@@ -78,6 +76,7 @@ namespace Chuye.Kafka {
             var fetchOffsetDetail
                 = topicPartition.FetchOffsetDetails[0]
                 = new FetchOffsetDetail();
+            fetchOffsetDetail.FetchOffset = 0L;
             fetchOffsetDetail.MaxBytes = 64 * 1024;
 
             var buffer = InvokeRequest(request);
@@ -86,6 +85,27 @@ namespace Chuye.Kafka {
 
             //var jsonStr = Newtonsoft.Json.JsonConvert.SerializeObject(response);
             //Console.WriteLine(jsonStr);
+        }
+
+        static void ProceedOffset() {
+            var request = new OffsetRequest();
+            request.ReplicaId = 0;
+            request.Partitions = new OffsetsRequestTopicPartition[1];
+            var partition
+                = request.Partitions[0]
+                = new OffsetsRequestTopicPartition();
+            partition.TopicName = TopicName;
+            partition.Details = new OffsetsRequestTopicPartitionDetail[1];
+            var detail
+                = partition.Details[0]
+                = new OffsetsRequestTopicPartitionDetail();
+            detail.Time = -1;
+            //detail.Time = (Int64)TimeSpan.FromDays(2D).TotalMilliseconds;
+            detail.Partition = 0;
+
+            var buffer = InvokeRequest(request);
+            var response = new OffsetResponse();
+            response.Read(buffer);
         }
 
         static ArraySegment<Byte> InvokeRequest(Request request) {
@@ -103,11 +123,10 @@ namespace Chuye.Kafka {
                 socket.Connect("127.0.0.1", 9092); // a proxy outside for debug
                 socket.Send(requestBytes.Array, requestBytes.Offset, SocketFlags.None);
 
-                Thread.Sleep(100);
                 const Int32 lengthBytesSize = 4;
                 socket.Receive(responseBuffer.Buffer, lengthBytesSize, SocketFlags.None);
                 var expectedBodyBytesSize = new Reader(responseBuffer.Buffer).ReadInt32();
-                Console.WriteLine("Expected bytes size = {0}", expectedBodyBytesSize);
+                Console.WriteLine("Expected body bytes size is {0}", expectedBodyBytesSize);
 
                 var receivedBodyBytesSize = 0;
                 //while (socket.Available > 0)  //failure
@@ -119,9 +138,10 @@ namespace Chuye.Kafka {
                         expectedBodyBytesSize - receivedBodyBytesSize,
                         SocketFlags.None
                     );
-                    Console.WriteLine("Actually body bytes received {0}", expectedBodyBytesSize);
+                    Console.WriteLine("Actually body bytes received {0}", receivedBodyBytesSize);
                 }
 
+                //Console.WriteLine("Actually body bytes received {0}", receivedBodyBytesSize);
                 var str2 = Encoding.UTF8.GetString(responseBuffer.Buffer, 0, lengthBytesSize + receivedBodyBytesSize);
                 Console.WriteLine("Parsed: {0}", Regex.Replace(str2, "[^a-zA-Z0-9]+", " "));
 

@@ -9,7 +9,20 @@ using Chuye.Kafka.Protocol.Implement;
 
 namespace Chuye.Kafka {
     public class Producer {
-        public void Post(String topicName, String key, String value) {
+        private readonly Option _option;
+        public Producer(Option option) {
+            _option = option;
+        }
+
+        public void Post(String topicName, String key, String message) {
+            Post(topicName, new KeyedMessage(key, message));
+        }
+
+        public void Post(String topicName, KeyedMessage message) {
+            Post(topicName, new[] { message });
+        }
+
+        public void Post(String topicName, IList<KeyedMessage> messages) {
             var request = new ProduceRequest();
             request.RequiredAcks = 1;
             request.Timeout = 100;
@@ -23,15 +36,22 @@ namespace Chuye.Kafka {
                 = topicPartition.Details[0]
                 = new ProduceRequestTopicDetail();
             topicDetail.MessageSets = new MessageSetCollection();
-            topicDetail.MessageSets.Items = new MessageSet[1];
-            var messageSet
-                = topicDetail.MessageSets.Items[0]
-                = new MessageSet();
-            messageSet.Message = new Message();
-            messageSet.Message.Key = Encoding.UTF8.GetBytes(key);
-            messageSet.Message.Value = Encoding.UTF8.GetBytes(value);
+            topicDetail.MessageSets.Items = new MessageSet[messages.Count];
+            for (int i = 0; i < messages.Count; i++) {
+                var messageSet
+                    = topicDetail.MessageSets.Items[i]
+                    = new MessageSet();
+                messageSet.Message = new Message();
+                if (messages[i].Key != null) {
+                    messageSet.Message.Key = Encoding.UTF8.GetBytes(messages[i].Key);
+                }
+                if (messages[i].Message != null) {
+                    messageSet.Message.Value = Encoding.UTF8.GetBytes(messages[i].Message);
+                }
+            }
 
-            var response = new Client().Send(request);
+            var client = new Client(_option);
+            var response = client.Send(request);
         }
     }
 }

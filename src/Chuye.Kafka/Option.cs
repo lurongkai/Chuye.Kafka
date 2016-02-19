@@ -11,35 +11,28 @@ namespace Chuye.Kafka {
         public String Host;
         public Int32 Port;
 
+        public static Option LoadDefault() {
+            var config = ConfigurationManager.AppSettings.Get("kafka:server");
+            if (config != null) {
+                const String pattern = "^(?<ip>(?:\\d{1,3}\\.){3}\\d{1,3})\\:(?<port>\\d+)$";
+                var match = Regex.Match(config, pattern);
+                if (match.Success) {
+                    var host = match.Groups["ip"].Value;
+                    var port = Int32.Parse(match.Groups["port"].Value);
+                    return new Option(host, port);
+                }
+                else {
+                    throw new ConfigurationErrorsException("AppSettings of \"kafka:server\"=\"{ip}:{port}\" incorrect");
+                }
+            }
+            else {
+                throw new ConfigurationErrorsException("AppSettings of \"kafka:server\"=\"{ip}:{port}\" missing");
+            }
+        }
+
         public Option(String host, Int32 port) {
             Host = host;
             Port = port;
-        }
-
-        private static Option? _default;
-
-        public static Option Default {
-            get {
-                if (!_default.HasValue) {
-                    var config = ConfigurationManager.AppSettings.Get("kafka:server");
-                    if (config != null) {
-                        const String pattern = "^(?<ip>(?:\\d{1,3}\\.){3}\\d{1,3})\\:(?<port>\\d+)$";
-                        var match = Regex.Match(config, pattern);
-                        if (match.Success) {
-                            var ip = match.Groups["ip"].Value;
-                            var port = Int32.Parse(match.Groups["port"].Value);
-                            _default = new Option(ip, port);
-                        }
-                        else {
-                            throw new ConfigurationErrorsException("AppSettings of \"kafka:server\"=\"{ip}:{port}\" incorrect");
-                        }
-                    }
-                    else {
-                        throw new ConfigurationErrorsException("AppSettings of \"kafka:server\"=\"{ip}:{port}\" missing");
-                    }
-                }
-                return _default.Value;
-            }
         }
     }
 }

@@ -34,10 +34,6 @@ namespace Chuye.Kafka {
             _responseTyps[(Int32)ApiKey.ListGroupsRequest]       = typeof(ListGroupsResponse);
         }
 
-        public Client()
-            : this(Option.Default) {
-        }
-
         public Client(Option option) {
             _host = option.Host;
             _port = option.Port;

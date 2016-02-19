@@ -7,8 +7,12 @@ using Chuye.Kafka.Protocol.Implement;
 
 namespace Chuye.Kafka {
     public class Consumer {
+        private readonly Option _option;
+        public Consumer(Option option) {
+            _option = option;
+        }
 
-        public IEnumerable<String> Fetch(String topicName, Int64 fetchOffset) {
+        public IEnumerable<KeyedMessage> Fetch(String topicName, Int64 fetchOffset) {
             var request = new FetchRequest();
             request.ReplicaId = -1;
             //e.g. setting MaxWaitTime to 100 ms and setting MinBytes to 64k 
@@ -28,13 +32,17 @@ namespace Chuye.Kafka {
             fetchOffsetDetail.FetchOffset = fetchOffset;
             fetchOffsetDetail.MaxBytes = 64 * 1024;
 
-            var client = new Client();
+            var client = new Client(_option);
             var response = (FetchResponse)(client.Send(request));
 
             return response.Items.SelectMany(x => x.MessageBodys)
                 .SelectMany(x => x.MessageSets.Items)
                 .Select(x => x.Message)
-                .Select(x => Encoding.UTF8.GetString(x.Value));
+                .Select(x => {
+                    var key = x.Key != null ? Encoding.UTF8.GetString(x.Key) : null;
+                    var message = x.Value != null ? Encoding.UTF8.GetString(x.Value) : null;
+                    return new KeyedMessage(key, message);
+                });
         }
     }
 }

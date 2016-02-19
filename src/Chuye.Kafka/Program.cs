@@ -11,18 +11,30 @@ using Chuye.Kafka.Utils;
 
 namespace Chuye.Kafka {
     class Program {
-        const String TopicName = "test6";
+        const String DemoTopicName = "test6";
 
         static void Main(string[] args) {
-            var producer = new Producer();
-            //producer.Post(TopicName, "key1", "value1");
+            var option = Option.LoadDefault();
+            var producer = new Producer(option);
+            var sendingMessages = new List<KeyedMessage>();
+            sendingMessages.Add("Hello kafka, demo message begin at " + DateTime.Now);
+            sendingMessages.Add("Set some cloud service");
+            sendingMessages.Add(new KeyedMessage("cloud", "Microsoft Azure"));
+            sendingMessages.Add(new KeyedMessage("cloud", "Amazon Aws"));
+            sendingMessages.Add("Set some animals");
+            sendingMessages.Add(new KeyedMessage("animals", "penguin"));
+            sendingMessages.Add(new KeyedMessage("animals", "bear"));
+            sendingMessages.Add(new KeyedMessage("animals", "anteater"));
+            sendingMessages.Add("Demo message ended at " + DateTime.Now);
 
-            var consumer = new Consumer();
-            var messages = consumer.Fetch(TopicName, 0L);
-            foreach(var msg in messages) {
+            producer.Post(DemoTopicName, sendingMessages);
+
+            var consumer = new Consumer(option);
+            var receivedMessages = consumer.Fetch(DemoTopicName, 0L);
+            foreach (var msg in receivedMessages) {
                 Console.WriteLine(msg);
             }
-            
+
             if (Debugger.IsAttached) {
                 Console.WriteLine("Press <Enter> to exit");
                 Console.ReadLine();
@@ -48,7 +60,7 @@ namespace Chuye.Kafka {
 
         static void ProceedMetadata() {
             var request = new MetadataRequest();
-            request.TopicNames = new[] { TopicName };
+            request.TopicNames = new[] { DemoTopicName };
 
             var buffer = InvokeRequest(request);
             var response = new MetadataResponse();
@@ -63,7 +75,7 @@ namespace Chuye.Kafka {
             var topicPartition
                 = request.TopicPartitions[0]
                 = new ProduceRequestTopicPartition();
-            topicPartition.TopicName = TopicName;
+            topicPartition.TopicName = DemoTopicName;
             topicPartition.Details = new ProduceRequestTopicDetail[1];
             var topicDetail
                 = topicPartition.Details[0]
@@ -94,7 +106,7 @@ namespace Chuye.Kafka {
             var topicPartition
                 = request.TopicPartitions[0]
                 = new TopicPartition();
-            topicPartition.TopicName = TopicName;
+            topicPartition.TopicName = DemoTopicName;
             topicPartition.FetchOffsetDetails = new FetchOffsetDetail[1];
             var fetchOffsetDetail
                 = topicPartition.FetchOffsetDetails[0]
@@ -117,7 +129,7 @@ namespace Chuye.Kafka {
             var partition
                 = request.Partitions[0]
                 = new OffsetsRequestTopicPartition();
-            partition.TopicName = TopicName;
+            partition.TopicName = DemoTopicName;
             partition.Details = new OffsetsRequestTopicPartitionDetail[1];
             var detail
                 = partition.Details[0]
@@ -152,7 +164,7 @@ namespace Chuye.Kafka {
             var partition
                 = request.Partitions[0]
                 = new OffsetCommitRequestTopicPartition();
-            partition.TopicName = TopicName;
+            partition.TopicName = DemoTopicName;
             partition.Details = new OffsetCommitRequestTopicPartitionDetail[1];
             var detail
                 = partition.Details[0]
@@ -173,7 +185,7 @@ namespace Chuye.Kafka {
             var topicPartition
                 = request.TopicPartitions[0]
                 = new OffsetFetchRequestTopicPartition();
-            topicPartition.TopicName = TopicName;
+            topicPartition.TopicName = DemoTopicName;
             topicPartition.Partitions = new[] { 0 };
 
             var buffer = InvokeRequest(request);

@@ -7,11 +7,11 @@ using System.Threading.Tasks;
 namespace Chuye.Kafka.Protocol {
 
     interface IWriteable {
-        void Write(Writer writer);
+        void SaveTo(Writer writer);
     }
 
     interface IReadable {
-        void Read(Reader reader);
+        void FetchFrom(Reader reader);
     }
 
     //RequestOrResponse => Size (RequestMessage | ResponseMessage)
@@ -42,11 +42,11 @@ namespace Chuye.Kafka.Protocol {
 
         public virtual ArraySegment<Byte> Serialize(Byte[] bytes) {
             var writer = new Writer(bytes);
-            Write(writer);
+            SaveTo(writer);
             return writer.Bytes;
         }
 
-        public virtual void Write(Writer writer) {
+        public virtual void SaveTo(Writer writer) {
             using (writer.PrepareLength()) {
                 writer.Write(ApiKey);
                 writer.Write(ApiVersion);

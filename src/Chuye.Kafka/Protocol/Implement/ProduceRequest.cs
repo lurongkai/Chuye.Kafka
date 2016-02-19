@@ -5,11 +5,11 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Chuye.Kafka.Protocol.Implement {
-    //ProduceRequest => RequiredAcks Timeout[TopicName[Partition MessageSetSize MessageSet]]
-    //  RequiredAcks => int16
-    //  Timeout => int32
-    //  Partition => int32
-    //  MessageSetSize => int32
+//ProduceRequest => RequiredAcks Timeout [TopicName [Partition MessageSetSize MessageSet]]
+//  RequiredAcks => int16
+//  Timeout => int32
+//  Partition => int32
+//  MessageSetSize => int32
     public class ProduceRequest : Request {
         public ProduceRequest()
             : base(RequestApiKey.ProduceRequest) {
@@ -17,17 +17,42 @@ namespace Chuye.Kafka.Protocol.Implement {
 
         public Int16 RequiredAcks { get; set; }
         public Int32 Timeout { get; set; }
-        public Int32 Partition { get; set; }
-        public Int32 MessageSetSize { get; set; }
+        public ProduceRequestTopicPartition[] TopicPartitions { get; set; }
 
         protected override void SerializeContent(Writer writer) {
-            throw new NotImplementedException();
+            writer.Write(RequiredAcks);
+            writer.Write(Timeout);
+            writer.Write(TopicPartitions.Length);
+            foreach (var item in TopicPartitions) {
+                item.SaveTo(writer);
+            }
         }
     }
 
-    //ProduceResponse => [TopicName [Partition ErrorCode Offset]]
-    //  TopicName => string
-    //  Partition => int32
-    //  ErrorCode => int16
-    //  Offset => int64
+    public class ProduceRequestTopicPartition : IWriteable {
+        public String TopicName { get; set; }
+        public ProduceRequestTopicDetail[] Details { get; set; }
+
+        public void SaveTo(Writer writer) {
+            writer.Write(TopicName);
+            writer.Write(Details.Length);
+            foreach (var item in Details) {
+                item.SaveTo(writer);
+            }
+        }
+    }
+
+    public class ProduceRequestTopicDetail : IWriteable {
+        public Int32 Partition { get; set; }
+        //public Int32 MessageSetSize { get; set; }
+        public MessageSetCollection MessageSets { get; set; }
+
+        public void SaveTo(Writer writer) {
+            writer.Write(Partition);
+            //writer.Write(MessageSetSize);
+            using (writer.PrepareLength()) {
+                MessageSets.SaveTo(writer);
+            }
+        }
+    }
 }

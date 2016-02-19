@@ -83,39 +83,50 @@ namespace Chuye.Kafka {
             var buffer = InvokeRequest(request);
             var response = new FetchResponse();
             response.Read(buffer);
+
+            //var jsonStr = Newtonsoft.Json.JsonConvert.SerializeObject(response);
+            //Console.WriteLine(jsonStr);
         }
 
         static ArraySegment<Byte> InvokeRequest(Request request) {
             var bufferProvider = new BufferProvider();
-            var bytes = bufferProvider.Borrow();
-            var buffer = request.Serialize(bytes);
-            //Console.WriteLine("Sending: {0}", BitConverter.ToString(buffer.Array, 0, buffer.Offset));
-            //var str1 = Encoding.UTF8.GetString(buffer.Array, 0, buffer.Offset);
-            //Console.WriteLine("Parsed: {0}", Regex.Replace(str1, "[^a-zA-Z0-9]+", " "));
+            using (var socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
+            using (var requestBuffer = bufferProvider.Borrow())
+            using (var responseBuffer = bufferProvider.Borrow()) {
+                var requestBytes = request.Serialize(requestBuffer.Buffer);
+                //Console.WriteLine("Sending: {0}", BitConverter.ToString(buffer.Array, 0, buffer.Offset));
+                //var str1 = Encoding.UTF8.GetString(buffer.Array, 0, buffer.Offset);
+                //Console.WriteLine("Parsed: {0}", Regex.Replace(str1, "[^a-zA-Z0-9]+", " "));
 
-            using (var socket = new Socket(SocketType.Stream, ProtocolType.Tcp)) {
+
                 //socket.Connect("192.168.8.130", 9092);
                 socket.Connect("127.0.0.1", 9092); // a proxy outside for debug
-                socket.Send(buffer.Array, buffer.Offset, SocketFlags.None);
+                socket.Send(requestBytes.Array, requestBytes.Offset, SocketFlags.None);
 
                 Thread.Sleep(100);
-                var received = socket.Receive(bytes);
-                var length = new Reader(bytes).ReadInt32();
-                //todo
-                while (length > received - 4) {
-                    Console.WriteLine("Received {0} bytes, less than {1}", received, length);
-                    //Console.WriteLine("Received: {0}", BitConverter.ToString(bytes, 0, received));
-                    received += socket.Receive(bytes, length + 4 - received, SocketFlags.None);
+                const Int32 lengthBytesSize = 4;
+                socket.Receive(responseBuffer.Buffer, lengthBytesSize, SocketFlags.None);
+                var expectedBodyBytesSize = new Reader(responseBuffer.Buffer).ReadInt32();
+                Console.WriteLine("Expected bytes size = {0}", expectedBodyBytesSize);
+
+                var receivedBodyBytesSize = 0;
+                //while (socket.Available > 0)  //failure
+
+                while (receivedBodyBytesSize < expectedBodyBytesSize) {
+                    receivedBodyBytesSize += socket.Receive(
+                        responseBuffer.Buffer,
+                        receivedBodyBytesSize + lengthBytesSize,
+                        expectedBodyBytesSize - receivedBodyBytesSize,
+                        SocketFlags.None
+                    );
+                    Console.WriteLine("Actually body bytes received {0}", expectedBodyBytesSize);
                 }
 
+                var str2 = Encoding.UTF8.GetString(responseBuffer.Buffer, 0, lengthBytesSize + receivedBodyBytesSize);
+                Console.WriteLine("Parsed: {0}", Regex.Replace(str2, "[^a-zA-Z0-9]+", " "));
 
-                //var str2 = Encoding.UTF8.GetString(bytes, 0, received);
-                //Console.WriteLine("Parsed: {0}", Regex.Replace(str2, "[^a-zA-Z0-9]+", " "));
-
-                bufferProvider.GiveBack(bytes);
                 socket.Close();
-
-                return new ArraySegment<Byte>(bytes, 0, received);
+                return new ArraySegment<Byte>(responseBuffer.Buffer, 0, lengthBytesSize + receivedBodyBytesSize);
             }
         }
     }

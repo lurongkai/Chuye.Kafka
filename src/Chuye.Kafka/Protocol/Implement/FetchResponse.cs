@@ -13,19 +13,19 @@ namespace Chuye.Kafka.Protocol.Implement {
     //  HighwaterMarkOffset => int64
     //  MessageSetSize => int32
     public class FetchResponse : Response {
-        public FetchResponseDetail[] Items { get; set; }
+        public FetchResponseTopicPartition[] TopicPartitions { get; set; }
 
         protected override void DeserializeContent(Reader reader) {
             var size = reader.ReadInt32();
-            Items = new FetchResponseDetail[size];
-            for (int i = 0; i < Items.Length; i++) {
-                Items[i] = new FetchResponseDetail();
-                Items[i].FetchFrom(reader);
+            TopicPartitions = new FetchResponseTopicPartition[size];
+            for (int i = 0; i < TopicPartitions.Length; i++) {
+                TopicPartitions[i] = new FetchResponseTopicPartition();
+                TopicPartitions[i].FetchFrom(reader);
             }
         }
     }
 
-    public class FetchResponseDetail : IReadable {
+    public class FetchResponseTopicPartition : IReadable {
         public String TopicName { get; set; }
         public MessageBody[] MessageBodys { get; set; }
 

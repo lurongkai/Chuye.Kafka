@@ -13,26 +13,8 @@ using Chuye.Kafka.Protocol.Implement.Management;
 
 namespace Chuye.Kafka {
     public class Client {
-        private static readonly Type[] _responseTyps;
         private readonly String _host;
         private readonly Int32 _port;
-
-        static Client() {
-            _responseTyps = new Type[17];
-            _responseTyps[(Int32)ApiKey.ProduceRequest] = typeof(ProduceResponse);
-            _responseTyps[(Int32)ApiKey.FetchRequest] = typeof(FetchResponse);
-            _responseTyps[(Int32)ApiKey.OffsetRequest] = typeof(OffsetResponse);
-            _responseTyps[(Int32)ApiKey.MetadataRequest] = typeof(MetadataResponse);
-            _responseTyps[(Int32)ApiKey.OffsetCommitRequest] = typeof(OffsetCommitResponse);
-            _responseTyps[(Int32)ApiKey.OffsetFetchRequest] = typeof(OffsetFetchResponse);
-            _responseTyps[(Int32)ApiKey.GroupCoordinatorRequest] = typeof(GroupCoordinatorResponse);
-            _responseTyps[(Int32)ApiKey.JoinGroupRequest] = typeof(JoinGroupResponse);
-            _responseTyps[(Int32)ApiKey.HeartbeatRequest] = typeof(HeartbeatResponse);
-            _responseTyps[(Int32)ApiKey.LeaveGroupRequest] = typeof(LeaveGroupResponse);
-            _responseTyps[(Int32)ApiKey.SyncGroupRequest] = typeof(SyncGroupResponse);
-            _responseTyps[(Int32)ApiKey.DescribeGroupsRequest] = typeof(DescribeGroupsResponse);
-            _responseTyps[(Int32)ApiKey.ListGroupsRequest] = typeof(ListGroupsResponse);
-        }
 
         public Client(Option option) {
             _host = option.Host;
@@ -44,21 +26,22 @@ namespace Chuye.Kafka {
             _port = port;
         }
 
-        public Response Send(Request request) {
+        public IResponseDispatcher Send(Request request) {
             var bufferProvider = new BufferProvider();
             using (var socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
-            using (var requestBuffer = bufferProvider.Borrow())
-            using (var responseBuffer = bufferProvider.Borrow()) {
+            using (var requestBuffer = bufferProvider.Borrow()) {
                 var requestBytes = request.Serialize(requestBuffer.Buffer);
                 socket.Connect(_host, _port);
                 socket.Send(requestBytes.Array, requestBytes.Offset, SocketFlags.None);
-
+                
                 var produceRequest = request as ProduceRequest;
-                if (produceRequest != null && produceRequest.RequiredAcks == 0) {
+                if (produceRequest != null && produceRequest.RequiredAcks == AcknowlegeStrategy.Async) {
+                    socket.Close();
                     return null;
                 }
 
                 const Int32 lengthBytesSize = 4;
+                var responseBuffer = bufferProvider.Borrow();
                 var beginningBytesReceived = socket.Receive(responseBuffer.Buffer, lengthBytesSize, SocketFlags.None);
                 if (beginningBytesReceived < lengthBytesSize) {
                     throw new SocketException((Int32)SocketError.SocketError);
@@ -76,21 +59,56 @@ namespace Chuye.Kafka {
                     );
                     //Debug.WriteLine("Actually body bytes received {0}", receivedBodyBytesSize);
                 }
-                socket.Close();
 
-                var segment = new ArraySegment<Byte>(responseBuffer.Buffer, 0, lengthBytesSize + receivedBodyBytesSize);
-                return ReadFromBuffer(request.ApiKey, segment);
+                socket.Close();
+                return new ReponseDispatcher(request.ApiKey, responseBuffer);
             }
         }
+    }
 
-        private Response ReadFromBuffer(ApiKey apiKey, ArraySegment<Byte> buffer) {
-            var responseTyp = _responseTyps[(Int32)apiKey];
+    public interface IResponseDispatcher : IDisposable {
+        Response ParseResult();
+    }
+
+    internal class ReponseDispatcher : IResponseDispatcher {
+        private static readonly Type[] _responseTyps;
+        private readonly ApiKey _apiKey;
+        private readonly IBufferWrapper _bufferWrapper;
+
+        static ReponseDispatcher() {
+            _responseTyps = new Type[17];
+            _responseTyps[(Int32)ApiKey.ProduceRequest] = typeof(ProduceResponse);
+            _responseTyps[(Int32)ApiKey.FetchRequest] = typeof(FetchResponse);
+            _responseTyps[(Int32)ApiKey.OffsetRequest] = typeof(OffsetResponse);
+            _responseTyps[(Int32)ApiKey.MetadataRequest] = typeof(MetadataResponse);
+            _responseTyps[(Int32)ApiKey.OffsetCommitRequest] = typeof(OffsetCommitResponse);
+            _responseTyps[(Int32)ApiKey.OffsetFetchRequest] = typeof(OffsetFetchResponse);
+            _responseTyps[(Int32)ApiKey.GroupCoordinatorRequest] = typeof(GroupCoordinatorResponse);
+            _responseTyps[(Int32)ApiKey.JoinGroupRequest] = typeof(JoinGroupResponse);
+            _responseTyps[(Int32)ApiKey.HeartbeatRequest] = typeof(HeartbeatResponse);
+            _responseTyps[(Int32)ApiKey.LeaveGroupRequest] = typeof(LeaveGroupResponse);
+            _responseTyps[(Int32)ApiKey.SyncGroupRequest] = typeof(SyncGroupResponse);
+            _responseTyps[(Int32)ApiKey.DescribeGroupsRequest] = typeof(DescribeGroupsResponse);
+            _responseTyps[(Int32)ApiKey.ListGroupsRequest] = typeof(ListGroupsResponse);
+        }
+
+        public ReponseDispatcher(ApiKey apiKey, IBufferWrapper bufferWrapper) {
+            _apiKey = apiKey;
+            _bufferWrapper = bufferWrapper;
+        }
+
+        public Response ParseResult() {
+            var responseTyp = _responseTyps[(Int32)_apiKey];
             if (responseTyp == null) {
                 throw new ArgumentOutOfRangeException("apiKey");
             }
             var response = (Response)Activator.CreateInstance(responseTyp);
-            response.Read(buffer);
+            response.Read(_bufferWrapper.Buffer);
             return response;
+        }
+
+        public void Dispose() {
+            _bufferWrapper.Dispose();
         }
     }
 }

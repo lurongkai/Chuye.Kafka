@@ -5,18 +5,18 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Chuye.Kafka.Tests {
     [TestClass]
     public class PerformanceTest {
-        private const String DemoTopicName = "test6";
+        private const String PerformaceTopic = "performace-topic";
 
         [TestMethod]
-        public void SendTenThousandMessagesWithNoResponse() {
+        public void SendMessag_Async() {
             var option = Option.LoadDefault();
-            var count = 10000;
+            const Int32 count = 10;
             var producer = new Producer(option);
-            producer.SendStrategy = ProducerSendStrategy.NoResponse;
+            producer.Strategy = AcknowlegeStrategy.Async;
 
             var stopwatch = Stopwatch.StartNew();
             for (int i = 0; i < count; i++) {
-                producer.Post(DemoTopicName, String.Concat(Guid.NewGuid().ToString("n"), ", ", i));
+                producer.Post(PerformaceTopic, String.Concat(Guid.NewGuid().ToString("n"), "#", i));
             }
             stopwatch.Stop();
             Console.WriteLine("Handle {0} messages in {1}, {2} /sec.",
@@ -24,15 +24,15 @@ namespace Chuye.Kafka.Tests {
         }
 
         [TestMethod]
-        public void SendTenThousandMessagesWithWaitLogged() {
+        public void SendMessag_Written() {
             var option = Option.LoadDefault();
-            var count = 10000;
+            const Int32 count = 1000;
             var producer = new Producer(option);
-            producer.SendStrategy = ProducerSendStrategy.WaitLogged;
+            producer.Strategy = AcknowlegeStrategy.Written;
 
             var stopwatch = Stopwatch.StartNew();
             for (int i = 0; i < count; i++) {
-                producer.Post(DemoTopicName, String.Concat(Guid.NewGuid().ToString("n"), ", ", i));
+                producer.Post(PerformaceTopic, String.Concat(Guid.NewGuid().ToString("n"), "#", i));
             }
             stopwatch.Stop();
             Console.WriteLine("Handle {0} messages in {1}, {2} /sec.",

@@ -38,7 +38,7 @@ namespace Chuye.Kafka.Protocol {
             ApiKey = apiKey;
             ApiVersion = 0;
             CorrelationId = System.Threading.Interlocked.Increment(ref CurrentCorrelationId);
-            ClientId = "Kafka-Net";
+            ClientId = "chuye.kafka";
         }
 
         protected void Verify() {

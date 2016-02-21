@@ -13,7 +13,7 @@ namespace Chuye.Kafka.Protocol.Implement {
     //  MaxNumberOfOffsets => int32
     public class OffsetRequest : Request {
         public Int32 ReplicaId { get; set; }
-        public OffsetsRequestTopicPartition[] Partitions { get; set; }
+        public OffsetsRequestTopicPartition[] TopicPartitions { get; set; }
 
         public OffsetRequest()
             : base(Protocol.ApiKey.OffsetRequest) {
@@ -21,8 +21,8 @@ namespace Chuye.Kafka.Protocol.Implement {
 
         protected override void SerializeContent(Writer writer) {
             writer.Write(ReplicaId);
-            writer.Write(Partitions.Length);
-            foreach (var item in Partitions) {
+            writer.Write(TopicPartitions.Length);
+            foreach (var item in TopicPartitions) {
                 item.SaveTo(writer);
             }
         }

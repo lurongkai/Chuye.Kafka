@@ -11,32 +11,32 @@ namespace Chuye.Kafka.Protocol.Implement {
     //  ErrorCode => int16
     //  Offset => int64
     public class ProduceResponse : Response {
-        public ProduceResponseDetail[] Items { get; set; }
+        public ProduceResponseTopicPartition[] TopicPartitions { get; set; }
 
         protected override void DeserializeContent(Reader reader) {
-            Items = new ProduceResponseDetail[reader.ReadInt32()];
-            for (int i = 0; i < Items.Length; i++) {
-                Items[i] = new ProduceResponseDetail();
-                Items[i].FetchFrom(reader);
+            TopicPartitions = new ProduceResponseTopicPartition[reader.ReadInt32()];
+            for (int i = 0; i < TopicPartitions.Length; i++) {
+                TopicPartitions[i] = new ProduceResponseTopicPartition();
+                TopicPartitions[i].FetchFrom(reader);
             }
         }
     }
 
-    public class ProduceResponseDetail : IReadable {
+    public class ProduceResponseTopicPartition : IReadable {
         public String TopicName { get; set; }
-        public OffsetDetail[] Offsets { get; set; }
+        public ProduceResponseTopicPartitionDetail[] Offsets { get; set; }
 
         public void FetchFrom(Reader reader) {
             TopicName = reader.ReadString();
-            Offsets = new OffsetDetail[reader.ReadInt32()];
+            Offsets = new ProduceResponseTopicPartitionDetail[reader.ReadInt32()];
             for (int i = 0; i < Offsets.Length; i++) {
-                Offsets[i] = new OffsetDetail();
+                Offsets[i] = new ProduceResponseTopicPartitionDetail();
                 Offsets[i].FetchFrom(reader);
             }
         }
     }
 
-    public class OffsetDetail : IReadable {
+    public class ProduceResponseTopicPartitionDetail : IReadable {
         public Int32 Partition { get; set; }
         //Possible Error Codes: (TODO)
         public ErrorCode ErrorCode { get; set; }

@@ -46,6 +46,7 @@
   <ItemGroup>
     <Compile Include="Client.cs" />
     <Compile Include="Consumer.cs" />
+    <Compile Include="KafkaException.cs" />
     <Compile Include="KeyedMessage.cs" />
     <Compile Include="Option.cs" />
     <Compile Include="Producer.cs" />

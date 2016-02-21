@@ -15,9 +15,13 @@ namespace Chuye.Kafka.Protocol {
     public abstract class Response {
         public Int32 Size;
         public Int32 CorrelationId;
-
+        
         public virtual void Read(ArraySegment<Byte> buffer) {
-            var reader = new Reader(buffer.Array);
+            Read(buffer.Array);
+        }
+
+        public void Read(Byte[] buffer) {
+            var reader = new Reader(buffer);
             Size = reader.ReadInt32();
             CorrelationId = reader.ReadInt32();
             DeserializeContent(reader);

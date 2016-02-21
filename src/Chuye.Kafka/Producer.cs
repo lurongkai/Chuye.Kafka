@@ -11,7 +11,7 @@ namespace Chuye.Kafka {
     public class Producer {
         private readonly Option _option;
 
-        public ProducerSendStrategy SendStrategy { get; set; }
+        public AcknowlegeStrategy Strategy { get; set; }
 
         public Producer(Option option) {
             _option = option;
@@ -26,8 +26,15 @@ namespace Chuye.Kafka {
         }
 
         public void Post(String topicName, IList<KeyedMessage> messages) {
+            if (String.IsNullOrWhiteSpace(topicName)) {
+                throw new ArgumentOutOfRangeException("topicName");
+            }
+            if (messages == null || messages.Count == 0) {
+                throw new ArgumentOutOfRangeException("messages");
+            }
+
             var request = new ProduceRequest();
-            request.RequiredAcks = (Int16)SendStrategy;
+            request.RequiredAcks = Strategy; //important
             request.Timeout = 100;
             request.TopicPartitions = new ProduceRequestTopicPartition[1];
             var topicPartition
@@ -38,6 +45,7 @@ namespace Chuye.Kafka {
             var topicDetail
                 = topicPartition.Details[0]
                 = new ProduceRequestTopicDetail();
+            topicDetail.Partition = 0; //important, accounding to server config
             topicDetail.MessageSets = new MessageSetCollection();
             topicDetail.MessageSets.Items = new MessageSet[messages.Count];
             for (int i = 0; i < messages.Count; i++) {
@@ -54,11 +62,30 @@ namespace Chuye.Kafka {
             }
 
             var client = new Client(_option);
-            var response = client.Send(request);
+            using (var responseDispatcher = client.Send(request)) {
+                if (request.RequiredAcks == AcknowlegeStrategy.Async) {
+                    return;
+                }
+
+                var response = (ProduceResponse)responseDispatcher.ParseResult();
+                var errors = response.TopicPartitions.SelectMany(x => x.Offsets)
+                    .Where(x => x.ErrorCode != ErrorCode.NoError);
+                if (errors.Any()) {
+                    throw new KafkaException(errors.First().ErrorCode);
+                }
+            };
         }
     }
-    //This field indicates how many acknowledgements the servers should receive before responding to the request. If it is 0 the server will not send any response (this is the only case where the server will not reply to a request). If it is 1, the server will wait the data is written to the local log before sending a response. If it is -1 the server will block until the message is committed by all in sync replicas before sending a response. For any number > 1 the server will block waiting for this number of acknowledgements to occur (but the server will never wait for more acknowledgements than there are in-sync replicas).
-    public enum ProducerSendStrategy : Int16 {
-        NoResponse = 0, WaitLogged = 1, Block = -1
+
+
+    /// <summary>
+    /// This field indicates how many acknowledgements the servers should receive before responding to the request. 
+    ///   If it is  0 the server will not send any response (this is the only case where the server will not reply to a request). 
+    ///   If it is  1, the server will wait the data is written to the local log before sending a response. 
+    ///   If it is -1 the server will block until the message is committed by all in sync replicas before sending a response. 
+    ///   For any number > 1 the server will block waiting for this number of acknowledgements to occur (but the server will never wait for more acknowledgements than there are in-sync replicas).
+    /// </summary>
+    public enum AcknowlegeStrategy : Int16 {
+        Async = 0, Written = 1, Block = -1
     }
 }

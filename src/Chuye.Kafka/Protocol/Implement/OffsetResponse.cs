@@ -11,7 +11,7 @@ namespace Chuye.Kafka.Protocol.Implement {
     //  ErrorCode => int16
     //  Offset => int64
     public class OffsetResponse : Response {
-        public OffsetResponseTopicPartition[] Partitions { get; set; }
+        public OffsetResponseTopicPartition[] TopicPartitions { get; set; }
 
         protected override void DeserializeContent(Reader reader) {
             var size = reader.ReadInt32();
@@ -19,10 +19,10 @@ namespace Chuye.Kafka.Protocol.Implement {
                 return;
             }
 
-            Partitions = new OffsetResponseTopicPartition[size];
+            TopicPartitions = new OffsetResponseTopicPartition[size];
             for (int i = 0; i < size; i++) {
-                Partitions[i] = new OffsetResponseTopicPartition();
-                Partitions[i].FetchFrom(reader);
+                TopicPartitions[i] = new OffsetResponseTopicPartition();
+                TopicPartitions[i].FetchFrom(reader);
             }
         }
     }

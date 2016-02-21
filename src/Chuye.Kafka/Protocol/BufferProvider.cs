@@ -6,12 +6,12 @@ using System.Threading.Tasks;
 using System.Collections.Concurrent;
 
 namespace Chuye.Kafka.Protocol {
-    interface IBufferWraper : IDisposable {
+    interface IBufferWrapper : IDisposable {
         Byte[] Buffer { get; }
     }
 
     interface IBufferProvider {
-        IBufferWraper Borrow();
+        IBufferWrapper Borrow();
     }
 
     class BufferProvider : IBufferProvider {
@@ -22,7 +22,7 @@ namespace Chuye.Kafka.Protocol {
             _buffers = new ConcurrentStack<WeakReference>();
         }
 
-        public IBufferWraper Borrow() {
+        public IBufferWrapper Borrow() {
             WeakReference item;
             while (!_buffers.IsEmpty) {
                 if (_buffers.TryPop(out item) && item.IsAlive) {
@@ -36,12 +36,12 @@ namespace Chuye.Kafka.Protocol {
             return new BufferWraper(this, buffer);
         }
 
-        internal void GiveBack(IBufferWraper buffer) {
+        internal void GiveBack(IBufferWrapper buffer) {
             var item = new WeakReference(buffer.Buffer, false);
             _buffers.Push(item);
         }
 
-        internal class BufferWraper : IBufferWraper {
+        internal class BufferWraper : IBufferWrapper {
             private readonly IBufferProvider _bufferProvider;
             private readonly Byte[] _buffer;
 

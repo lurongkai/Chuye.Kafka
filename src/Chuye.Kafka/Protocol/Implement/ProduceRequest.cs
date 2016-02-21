@@ -12,15 +12,15 @@ namespace Chuye.Kafka.Protocol.Implement {
 //  MessageSetSize => int32
     public class ProduceRequest : Request {
         public ProduceRequest()
-            : base(Protocol.ApiKey.ProduceRequest) {
+            : base(ApiKey.ProduceRequest) {
         }
 
-        public Int16 RequiredAcks { get; set; }
+        public AcknowlegeStrategy RequiredAcks { get; set; }
         public Int32 Timeout { get; set; }
         public ProduceRequestTopicPartition[] TopicPartitions { get; set; }
 
         protected override void SerializeContent(Writer writer) {
-            writer.Write(RequiredAcks);
+            writer.Write((Int16)RequiredAcks);
             writer.Write(Timeout);
             writer.Write(TopicPartitions.Length);
             foreach (var item in TopicPartitions) {

@@ -1,13 +1,9 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Collections.Generic;
-using System.Net.Sockets;
-using System.Text;
-using System.Text.RegularExpressions;
+using System.Diagnostics;
 using Chuye.Kafka.Protocol;
 using Chuye.Kafka.Protocol.Implement;
 using Chuye.Kafka.Protocol.Implement.Management;
-using Chuye.Kafka.Utils;
 
 namespace Chuye.Kafka {
     class Program {
@@ -57,30 +53,19 @@ namespace Chuye.Kafka {
 
         #region low level api demo
         private static void ProceedListGroups_DescribeGroups() {
-            {
-                var request = new ListGroupsRequest();
-                var buffer = InvokeRequest(request);
-                var response = new ListGroupsResponse();
-                response.Read(buffer);
-            }
+            var listGroupsRequest = new ListGroupsRequest();
+            var listGroupsResponse = (ListGroupsResponse)InvokeRequest(listGroupsRequest);
+            var describeGroupsRequest = new DescribeGroupsRequest();
+            describeGroupsRequest.GroupId = new[] { "xx" };
+            var describeGroupsResponse = (DescribeGroupsResponse)InvokeRequest(describeGroupsRequest);
 
-            {
-                var request = new DescribeGroupsRequest();
-                request.GroupId = new[] { "xx" };
-                var buffer = InvokeRequest(request);
-                var response = new DescribeGroupsResponse();
-                response.Read(buffer);
-            }
         }
 
         static void ProceedGroupCoordinator() {
             var request = new GroupCoordinatorRequest();
             //request.GroupId = String.Empty;
             request.GroupId = "100";
-
-            var buffer = InvokeRequest(request);
-            var response = new GroupCoordinatorResponse();
-            response.Read(buffer);
+            var response = (GroupCoordinatorResponse)InvokeRequest(request);
         }
 
         static void ProceedOffsetCommit() {
@@ -102,10 +87,7 @@ namespace Chuye.Kafka {
             detail.Partition = 0;
             detail.Offset = 1;
 
-
-            var buffer = InvokeRequest(request);
-            var response = new OffsetCommitResponse();
-            response.Read(buffer);
+            var response = (OffsetCommitResponse)InvokeRequest(request);
         }
 
         static void ProceedOffsetFetch() {
@@ -118,53 +100,13 @@ namespace Chuye.Kafka {
             topicPartition.TopicName = DemoTopic;
             topicPartition.Partitions = new[] { 0 };
 
-            var buffer = InvokeRequest(request);
-            var response = new OffsetFetchResponse();
-            response.Read(buffer);
+            var response = (OffsetFetchResponse)InvokeRequest(request);
         }
 
-        static ArraySegment<Byte> InvokeRequest(Request request) {
-            var bufferProvider = new BufferProvider();
-            using (var socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
-            using (var requestBuffer = bufferProvider.Borrow())
-            using (var responseBuffer = bufferProvider.Borrow()) {
-                var requestBytes = request.Serialize(requestBuffer.Buffer);
-                //Console.WriteLine("Sending: {0}", BitConverter.ToString(buffer.Array, 0, buffer.Offset));
-                //var str1 = Encoding.UTF8.GetString(buffer.Array, 0, buffer.Offset);
-                //Console.WriteLine("Parsed: {0}", Regex.Replace(str1, "[^a-zA-Z0-9]+", " "));
-
-
-                //socket.Connect("192.168.8.130", 9092);
-                socket.Connect("127.0.0.1", 9092); // a proxy outside for debug
-                socket.Send(requestBytes.Array, requestBytes.Offset, SocketFlags.None);
-
-                const Int32 lengthBytesSize = 4;
-                var beginningBytesReceived = socket.Receive(responseBuffer.Buffer, lengthBytesSize, SocketFlags.None);
-                if (beginningBytesReceived < lengthBytesSize) {
-                    throw new SocketException((Int32)SocketError.SocketError);
-                }
-                var expectedBodyBytesSize = new Reader(responseBuffer.Buffer).ReadInt32();
-                Console.WriteLine("Expected body bytes size is {0}", expectedBodyBytesSize);
-
-                var receivedBodyBytesSize = 0;
-                //while (socket.Available > 0)  //failure
-
-                while (receivedBodyBytesSize < expectedBodyBytesSize) {
-                    receivedBodyBytesSize += socket.Receive(
-                        responseBuffer.Buffer,
-                        receivedBodyBytesSize + lengthBytesSize,
-                        expectedBodyBytesSize - receivedBodyBytesSize,
-                        SocketFlags.None
-                    );
-                    Console.WriteLine("Actually body bytes received {0}", receivedBodyBytesSize);
-                }
-
-                //Console.WriteLine("Actually body bytes received {0}", receivedBodyBytesSize);
-                var str2 = Encoding.UTF8.GetString(responseBuffer.Buffer, 0, lengthBytesSize + receivedBodyBytesSize);
-                Console.WriteLine("Parsed: {0}", Regex.Replace(str2, "[^a-zA-Z0-9]+", " "));
-
-                socket.Close();
-                return new ArraySegment<Byte>(responseBuffer.Buffer, 0, lengthBytesSize + receivedBodyBytesSize);
+        static Response InvokeRequest(Request request) {
+            var client = new Client(Option.LoadDefault());
+            using (var responseDispatcher = client.Send(request)) {
+                return responseDispatcher.ParseResult();
             }
         }
 

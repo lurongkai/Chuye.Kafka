@@ -8,20 +8,21 @@ using Chuye.Kafka.Protocol.Implement;
 
 namespace Chuye.Kafka {
     public class Consumer {
-        private readonly Option _option;
+        private readonly Client _client;
+
         public Consumer(Option option) {
-            _option = option;
+            _client = new Client(option);
         }
 
         public MetadataResponse FetchMetadata(String topicName) {
             var request = new MetadataRequest();
             request.TopicNames = new[] { topicName };
 
-            var client = new Client(_option);
-            using (var responseDispatcher = client.Send(request)) {
+            using (var responseDispatcher = _client.Send(request)) {
                 var response = (MetadataResponse)responseDispatcher.ParseResult();
-                if (response.TopicMetadatas[0].TopicErrorCode != ErrorCode.NoError) {
-                    throw new KafkaException(response.TopicMetadatas[0].TopicErrorCode);
+                var errors = response.TopicMetadatas.Where(x => x.TopicErrorCode != ErrorCode.NoError);
+                if (errors.Any()) {
+                    throw new KafkaException(errors.First().TopicErrorCode);
                 }
                 return response;
             }
@@ -43,8 +44,7 @@ namespace Chuye.Kafka {
             detail.Time = -2;
             detail.MaxNumberOfOffsets = 1;
 
-            var client = new Client(_option);
-            using (var responseDispatcher = client.Send(request)) {
+            using (var responseDispatcher = _client.Send(request)) {
                 var response = (OffsetResponse)responseDispatcher.ParseResult();
                 var errors = response.TopicPartitions.SelectMany(x => x.Offsets)
                     .Where(x => x.ErrorCode != x.ErrorCode);
@@ -76,8 +76,7 @@ namespace Chuye.Kafka {
             fetchOffsetDetail.FetchOffset = fetchOffset;
             fetchOffsetDetail.MaxBytes = 64 * 1024;
 
-            var client = new Client(_option);
-            using (var responseDispatcher = client.Send(request)) {
+            using (var responseDispatcher = _client.Send(request)) {
                 var response = (FetchResponse)responseDispatcher.ParseResult();
                 return response.TopicPartitions.SelectMany(x => x.MessageBodys)
                     .SelectMany(x => x.MessageSets.Items)

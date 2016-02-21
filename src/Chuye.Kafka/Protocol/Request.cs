@@ -45,7 +45,7 @@ namespace Chuye.Kafka.Protocol {
             DataAnnotationHelper.ThrowIfInvalid(this);
         }
 
-        public virtual ArraySegment<Byte> Serialize(Byte[] bytes) {
+        public virtual ArraySegment<Byte> Serialize(ArraySegment<Byte> bytes) {
             Verify();
             var writer = new Writer(bytes);
             SaveTo(writer);

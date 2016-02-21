@@ -50,8 +50,9 @@
     <Compile Include="KeyedMessage.cs" />
     <Compile Include="Option.cs" />
     <Compile Include="Producer.cs" />
+    <Compile Include="Protocol\BufferManager.cs" />
+    <Compile Include="Protocol\ReponseDispatcher.cs" />
     <Compile Include="Utils\DataAnnotationHelper.cs" />
-    <Compile Include="Protocol\BufferProvider.cs" />
     <Compile Include="Protocol\Implement\Management\DescribeGroupsRequest.cs" />
     <Compile Include="Protocol\Implement\Management\DescribeGroupsResponse.cs" />
     <Compile Include="Protocol\Implement\Management\GroupCoordinatorResponse.cs" />

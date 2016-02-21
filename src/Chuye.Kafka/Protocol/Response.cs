@@ -17,11 +17,11 @@ namespace Chuye.Kafka.Protocol {
         public Int32 CorrelationId;
         
         public virtual void Read(ArraySegment<Byte> buffer) {
-            Read(buffer.Array);
+            Read(buffer.Array, buffer.Offset);
         }
 
-        public void Read(Byte[] buffer) {
-            var reader = new Reader(buffer);
+        public void Read(Byte[] buffer, Int32 offset) {
+            var reader = new Reader(buffer, offset);
             Size = reader.ReadInt32();
             CorrelationId = reader.ReadInt32();
             DeserializeContent(reader);

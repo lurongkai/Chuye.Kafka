@@ -9,12 +9,12 @@ using Chuye.Kafka.Protocol.Implement;
 
 namespace Chuye.Kafka {
     public class Producer {
-        private readonly Option _option;
+        private readonly Client _client;
 
         public AcknowlegeStrategy Strategy { get; set; }
 
         public Producer(Option option) {
-            _option = option;
+            _client = new Client(option);
         }
 
         public void Post(String topicName, String key, String message) {
@@ -60,9 +60,8 @@ namespace Chuye.Kafka {
                     messageSet.Message.Value = Encoding.UTF8.GetBytes(messages[i].Message);
                 }
             }
-
-            var client = new Client(_option);
-            using (var responseDispatcher = client.Send(request)) {
+                        
+            using (var responseDispatcher = _client.Send(request)) {
                 if (request.RequiredAcks == AcknowlegeStrategy.Async) {
                     return;
                 }

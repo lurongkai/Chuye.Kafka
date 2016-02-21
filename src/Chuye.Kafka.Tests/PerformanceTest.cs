@@ -26,7 +26,7 @@ namespace Chuye.Kafka.Tests {
         [TestMethod]
         public void SendMessag_Written() {
             var option = Option.LoadDefault();
-            const Int32 count = 1000;
+            const Int32 count = 10;
             var producer = new Producer(option);
             producer.Strategy = AcknowlegeStrategy.Written;
 

@@ -9,64 +9,73 @@ namespace Chuye.Kafka.Protocol {
 
     public class Writer {
         private readonly Byte[] _bytes;
-        private Int32 _offset;
+        private Int32 _startOffset;
+        private Int32 _currentOffset;
 
-        public Writer(Byte[] bytes) {
-            _bytes = bytes;
-            _offset = 0;
+        public Writer(ArraySegment<Byte> buffer)
+            : this(buffer.Array, buffer.Offset) {
+        }
+
+        public Writer(Byte[] bytes, Int32 offset) {
+            _bytes         = bytes;
+            _startOffset   = offset;
+            _currentOffset = offset;
         }
 
         public ArraySegment<Byte> Bytes {
-            get { return new ArraySegment<byte>(_bytes, _offset, _offset); }
+            get {
+                return new ArraySegment<Byte>(_bytes, _currentOffset,
+                    _currentOffset - _startOffset);
+            }
         }
 
         public ICompute PrepareCrc() {
-            var previousPosition = _offset;
+            var previousPosition = _currentOffset;
             Write(0);
             return new CrcWriter(this, previousPosition);
         }
 
         public ICompute PrepareLength() {
-            var previousPosition = _offset;
+            var previousPosition = _currentOffset;
             Write(0);
             return new PositionWriter(this, previousPosition);
         }
 
         public void Reset() {
-            _offset = 0;
+            _currentOffset = 0;
         }
 
         public Writer Write(Int64 value) {
             //Write(BitConverter.GetBytes(value).Reverse().ToArray(), false);
-            _bytes[_offset++] = (byte)((value >> 56));
-            _bytes[_offset++] = (byte)((value >> 48));
-            _bytes[_offset++] = (byte)((value >> 40));
-            _bytes[_offset++] = (byte)(value >> 32);
-            _bytes[_offset++] = (byte)((value >> 24));
-            _bytes[_offset++] = (byte)((value >> 16));
-            _bytes[_offset++] = (byte)((value >> 8));
-            _bytes[_offset++] = (byte)(value);
+            _bytes[_currentOffset++] = (byte)((value >> 56));
+            _bytes[_currentOffset++] = (byte)((value >> 48));
+            _bytes[_currentOffset++] = (byte)((value >> 40));
+            _bytes[_currentOffset++] = (byte)(value >> 32);
+            _bytes[_currentOffset++] = (byte)((value >> 24));
+            _bytes[_currentOffset++] = (byte)((value >> 16));
+            _bytes[_currentOffset++] = (byte)((value >> 8));
+            _bytes[_currentOffset++] = (byte)(value);
             return this;
         }
 
         public Writer Write(Int32 value) {
             //Write(BitConverter.GetBytes(value).Reverse().ToArray(), false);
-            _bytes[_offset++] = (byte)((value >> 24));
-            _bytes[_offset++] = (byte)((value >> 16));
-            _bytes[_offset++] = (byte)((value >> 8));
-            _bytes[_offset++] = (byte)(value);
+            _bytes[_currentOffset++] = (byte)((value >> 24));
+            _bytes[_currentOffset++] = (byte)((value >> 16));
+            _bytes[_currentOffset++] = (byte)((value >> 8));
+            _bytes[_currentOffset++] = (byte)(value);
             return this;
         }
 
         public Writer Write(Int16 value) {
             //Write(BitConverter.GetBytes(value).Reverse().ToArray(), false);
-            _bytes[_offset++] = (byte)((value >> 8));
-            _bytes[_offset++] = (byte)(value);
+            _bytes[_currentOffset++] = (byte)((value >> 8));
+            _bytes[_currentOffset++] = (byte)(value);
             return this;
         }
 
         public Writer Write(Byte value) {
-            _bytes[_offset++] = value;
+            _bytes[_currentOffset++] = value;
             return this;
         }
 
@@ -77,9 +86,9 @@ namespace Chuye.Kafka.Protocol {
             }
 
             Write((Int32)bytes.Length);
-            bytes.CopyTo(_bytes, _offset);
+            bytes.CopyTo(_bytes, _currentOffset);
             //Array.Copy(_bytes, 0, _bytes, _offset++, _bytes.Length);
-            _offset += bytes.Length;
+            _currentOffset += bytes.Length;
             return this;
         }
 
@@ -91,9 +100,9 @@ namespace Chuye.Kafka.Protocol {
 
             Write((Int16)value.Length);
             var bytes = Encoding.UTF8.GetBytes(value);
-            bytes.CopyTo(_bytes, _offset);
+            bytes.CopyTo(_bytes, _currentOffset);
             //Array.Copy(_bytes, 0, _bytes, _offset++, _bytes.Length);
-            _offset += value.Length;
+            _currentOffset += value.Length;
             return this;
         }
 
@@ -109,12 +118,12 @@ namespace Chuye.Kafka.Protocol {
             }
 
             public void Dispose() {
-                var currentPosition = _writer._offset;
+                var currentPosition = _writer._currentOffset;
                 var subsequent = (Int32)(currentPosition - _previousPosition - 4);
                 var crc = (Int32)KafkaNet.Common.Crc32Provider.Compute(_writer._bytes, _previousPosition + 4, subsequent);
-                _writer._offset = _previousPosition;
+                _writer._currentOffset = _previousPosition;
                 _writer.Write(crc);
-                _writer._offset = currentPosition;
+                _writer._currentOffset = currentPosition;
 
                 Value = crc;
             }
@@ -132,11 +141,11 @@ namespace Chuye.Kafka.Protocol {
             }
 
             public void Dispose() {
-                var currentPosition = _writer._offset;
+                var currentPosition = _writer._currentOffset;
                 var length = (Int32)(currentPosition - _previousPosition - 4);
-                _writer._offset = _previousPosition;
+                _writer._currentOffset = _previousPosition;
                 _writer.Write(length);
-                _writer._offset = currentPosition;
+                _writer._currentOffset = currentPosition;
 
                 Value = length;
             }

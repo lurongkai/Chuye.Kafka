@@ -11,15 +11,22 @@ namespace Chuye.Kafka.Protocol.Implement {
         public TopicMetadata[] TopicMetadatas { get; set; }
 
         protected override void DeserializeContent(Reader reader) {
-            Brokers = new Broker[reader.ReadInt32()];
-            for (int i = 0; i < Brokers.Length; i++) {
-                Brokers[i] = new Broker();
-                Brokers[i].FetchFrom(reader);
+            var brokerSize = reader.ReadInt32();
+            if (brokerSize != -1) {
+                Brokers = new Broker[brokerSize];
+                for (int i = 0; i < Brokers.Length; i++) {
+                    Brokers[i] = new Broker();
+                    Brokers[i].FetchFrom(reader);
+                }
             }
-            TopicMetadatas = new TopicMetadata[reader.ReadInt32()];
-            for (int i = 0; i < TopicMetadatas.Length; i++) {
-                TopicMetadatas[i] = new TopicMetadata();
-                TopicMetadatas[i].FetchFrom(reader);
+            var topicMetadataSize = reader.ReadInt32();
+            if(topicMetadataSize!=-1)
+            TopicMetadatas = new TopicMetadata[topicMetadataSize];
+            {
+                for (int i = 0; i < TopicMetadatas.Length; i++) {
+                    TopicMetadatas[i] = new TopicMetadata();
+                    TopicMetadatas[i].FetchFrom(reader);
+                }
             }
         }
     }

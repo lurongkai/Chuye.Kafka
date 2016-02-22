@@ -8,12 +8,14 @@ using Chuye.Kafka.Protocol;
 using Chuye.Kafka.Protocol.Implement;
 
 namespace Chuye.Kafka {
-    public class Producer {
+    public class Producer : IDisposable {
+        private readonly Option _option;
         private readonly Client _client;
 
         public AcknowlegeStrategy Strategy { get; set; }
 
         public Producer(Option option) {
+            _option = option;
             _client = new Client(option);
         }
 
@@ -26,43 +28,9 @@ namespace Chuye.Kafka {
         }
 
         public void Post(String topicName, IList<KeyedMessage> messages) {
-            if (String.IsNullOrWhiteSpace(topicName)) {
-                throw new ArgumentOutOfRangeException("topicName");
-            }
-            if (messages == null || messages.Count == 0) {
-                throw new ArgumentOutOfRangeException("messages");
-            }
-
-            var request = new ProduceRequest();
-            request.RequiredAcks = Strategy; //important
-            request.Timeout = 100;
-            request.TopicPartitions = new ProduceRequestTopicPartition[1];
-            var topicPartition
-                = request.TopicPartitions[0]
-                = new ProduceRequestTopicPartition();
-            topicPartition.TopicName = topicName;
-            topicPartition.Details = new ProduceRequestTopicDetail[1];
-            var topicDetail
-                = topicPartition.Details[0]
-                = new ProduceRequestTopicDetail();
-            topicDetail.Partition = 0; //important, accounding to server config
-            topicDetail.MessageSets = new MessageSetCollection();
-            topicDetail.MessageSets.Items = new MessageSet[messages.Count];
-            for (int i = 0; i < messages.Count; i++) {
-                var messageSet
-                    = topicDetail.MessageSets.Items[i]
-                    = new MessageSet();
-                messageSet.Message = new Message();
-                if (messages[i].Key != null) {
-                    messageSet.Message.Key = Encoding.UTF8.GetBytes(messages[i].Key);
-                }
-                if (messages[i].Message != null) {
-                    messageSet.Message.Value = Encoding.UTF8.GetBytes(messages[i].Message);
-                }
-            }
-                        
+            ProduceRequest request = ProduceRequest.Create(topicName, messages, Strategy);
             using (var responseDispatcher = _client.Send(request)) {
-                if (request.RequiredAcks == AcknowlegeStrategy.Async) {
+                if (request.RequiredAcks == AcknowlegeStrategy.Immediate) {
                     return;
                 }
 
@@ -74,7 +42,37 @@ namespace Chuye.Kafka {
                 }
             };
         }
+
+        public Task PostAsync(String topicName, String key, String message) {
+            return PostAsync(topicName, new KeyedMessage(key, message));
+        }
+
+        public Task PostAsync(String topicName, KeyedMessage message) {
+            return PostAsync(topicName, new[] { message });
+        }
+
+        public async Task PostAsync(String topicName, IList<KeyedMessage> messages) {
+            ProduceRequest request = ProduceRequest.Create(topicName, messages, Strategy);
+
+            using (var responseDispatcher = await _client.SendAsync(request)) {
+                if (request.RequiredAcks == AcknowlegeStrategy.Immediate) {
+                    return;
+                }
+
+                var response = (ProduceResponse)responseDispatcher.ParseResult();
+                var errors = response.TopicPartitions.SelectMany(x => x.Offsets)
+                    .Where(x => x.ErrorCode != ErrorCode.NoError);
+                if (errors.Any()) {
+                    throw new KafkaException(errors.First().ErrorCode);
+                }
+            };
+        }
+
+        public void Dispose() {
+            _client.Dispose();
+        }
     }
+
 
 
     /// <summary>
@@ -85,6 +83,10 @@ namespace Chuye.Kafka {
     ///   For any number > 1 the server will block waiting for this number of acknowledgements to occur (but the server will never wait for more acknowledgements than there are in-sync replicas).
     /// </summary>
     public enum AcknowlegeStrategy : Int16 {
-        Async = 0, Written = 1, Block = -1
+        Immediate = 0, Written = 1, Block = -1
+    }
+
+    public enum MessageCodec {
+        CodecNone = 0x00, CodecGzip = 0x01, CodecSnappy = 0x02
     }
 }

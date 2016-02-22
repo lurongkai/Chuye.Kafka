@@ -22,11 +22,8 @@ namespace Chuye.Kafka.Protocol {
             _currentOffset = offset;
         }
 
-        public ArraySegment<Byte> Bytes {
-            get {
-                return new ArraySegment<Byte>(_bytes, _currentOffset,
-                    _currentOffset - _startOffset);
-            }
+        public Int32 Count {
+            get { return _currentOffset - _startOffset; }
         }
 
         public ICompute PrepareCrc() {

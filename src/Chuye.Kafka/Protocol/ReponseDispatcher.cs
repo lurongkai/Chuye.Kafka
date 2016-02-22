@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.ServiceModel.Channels;
 using System.Text;
 using System.Threading.Tasks;
 using Chuye.Kafka.Protocol.Implement;
@@ -14,10 +15,11 @@ namespace Chuye.Kafka.Protocol {
     internal class ReponseDispatcher : IResponseDispatcher {
         private static readonly Type[] _responseTyps;
         private readonly ApiKey _apiKey;
-        private readonly IBufferWrapper _bufferWrapper;
+        private readonly Byte[] _responseBytes;
+        private readonly BufferManager _bufferManager;
 
         static ReponseDispatcher() {
-            _responseTyps = new Type[17];
+            _responseTyps                                        = new Type[17];
             _responseTyps[(Int32)ApiKey.ProduceRequest]          = typeof(ProduceResponse);
             _responseTyps[(Int32)ApiKey.FetchRequest]            = typeof(FetchResponse);
             _responseTyps[(Int32)ApiKey.OffsetRequest]           = typeof(OffsetResponse);
@@ -33,9 +35,10 @@ namespace Chuye.Kafka.Protocol {
             _responseTyps[(Int32)ApiKey.ListGroupsRequest]       = typeof(ListGroupsResponse);
         }
 
-        public ReponseDispatcher(ApiKey apiKey, IBufferWrapper bufferWrapper) {
+        public ReponseDispatcher(ApiKey apiKey, Byte[] responseBytes, BufferManager bufferManager) {
             _apiKey = apiKey;
-            _bufferWrapper = bufferWrapper;
+            _responseBytes = responseBytes;
+            _bufferManager = bufferManager;
         }
 
         public Response ParseResult() {
@@ -44,12 +47,12 @@ namespace Chuye.Kafka.Protocol {
                 throw new ArgumentOutOfRangeException("apiKey");
             }
             var response = (Response)Activator.CreateInstance(responseTyp);
-            response.Read(_bufferWrapper.Segment);
+            response.Read(_responseBytes, 0);
             return response;
         }
 
         public void Dispose() {
-            _bufferWrapper.Dispose();
+            _bufferManager.ReturnBuffer(_responseBytes);
         }
     }
 }

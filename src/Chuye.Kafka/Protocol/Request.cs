@@ -45,11 +45,11 @@ namespace Chuye.Kafka.Protocol {
             DataAnnotationHelper.ThrowIfInvalid(this);
         }
 
-        public virtual ArraySegment<Byte> Serialize(ArraySegment<Byte> bytes) {
+        public virtual Int32 Serialize(ArraySegment<Byte> bytes) {
             Verify();
             var writer = new Writer(bytes);
             SaveTo(writer);
-            return writer.Bytes;
+            return writer.Count;
         }
 
         public virtual void SaveTo(Writer writer) {

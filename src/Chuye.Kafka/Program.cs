@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using Chuye.Kafka.Protocol;
 using Chuye.Kafka.Protocol.Implement;
 using Chuye.Kafka.Protocol.Implement.Management;
@@ -10,8 +11,11 @@ namespace Chuye.Kafka {
         const String DemoTopic = "demo-topic";
 
         static void Main(string[] args) {
+            Debug.Listeners.Clear();
+            //Debug.Listeners.Add(new TextWriterTraceListener(Console.Out));
             //ProduceDemo();
-            ConsumerDemo();
+            //ConsumerDemo();
+            //SendMessag_Async();
 
             if (Debugger.IsAttached) {
                 Console.WriteLine("Press <Enter> to exit");
@@ -19,12 +23,30 @@ namespace Chuye.Kafka {
             }
         }
 
+        static void SendMessag_Async() {
+            const String targetTopic = "async-topic";
+            var option = Option.LoadDefault();
+            var producer = new Producer(option);
+            producer.Strategy = AcknowlegeStrategy.Immediate;
+
+            const Int32 count = 10;
+            var stopwatch = Stopwatch.StartNew();
+            for (int i = 0; i < count; i++) {
+                var message = String.Concat(Guid.NewGuid().ToString("n"), "#", i);
+                Console.WriteLine("Sending... {0}", message);
+                producer.Post(targetTopic, message);
+            }
+            stopwatch.Stop();
+            Console.WriteLine("Handle {0} messages in {1}, {2} /sec.",
+                count, stopwatch.Elapsed, count / stopwatch.Elapsed.TotalSeconds);
+        }
+
         #region high level api demo
         static void ConsumerDemo() {
-            var option = Option.LoadDefault();
+            var option   = Option.LoadDefault();
             var consumer = new Consumer(option);
             var metadata = consumer.FetchMetadata(DemoTopic);
-            var offset = consumer.FetchOffset(DemoTopic);
+            var offset   = consumer.FetchOffset(DemoTopic);
             var messages = consumer.Fetch(DemoTopic, offset);
 
             foreach (var msg in messages) {

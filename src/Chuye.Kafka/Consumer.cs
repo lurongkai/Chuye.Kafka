@@ -61,9 +61,9 @@ namespace Chuye.Kafka {
             request.ReplicaId = -1;
             //e.g. setting MaxWaitTime to 100 ms and setting MinBytes to 64k 
             // would allow the server to wait up to 100ms  
-            // to try to accumulate 64k of data before responding
+            // to try to accumulate 30k of data before responding
             request.MaxWaitTime = 100;
-            request.MinBytes = 64 * 1024;
+            request.MinBytes = 30 * 1024;
             request.TopicPartitions = new TopicPartition[1];
             var topicPartition
                 = request.TopicPartitions[0]

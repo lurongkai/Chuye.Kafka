@@ -10,6 +10,8 @@ namespace Chuye.Kafka {
     public struct Option {
         public String Host;
         public Int32 Port;
+        public Int32 BufferSize;
+        public Int32 BufferBlock;
 
         public static Option LoadDefault() {
             var config = ConfigurationManager.AppSettings.Get("kafka:server");
@@ -30,9 +32,11 @@ namespace Chuye.Kafka {
             }
         }
 
-        public Option(String host, Int32 port) {
+        public Option(String host, Int32 port, Int32 bufferSize = 32 * 1024, Int32 bufferBlock = 32) {
             Host = host;
             Port = port;
+            BufferSize = bufferSize;
+            BufferBlock = bufferBlock;
         }
     }
 }

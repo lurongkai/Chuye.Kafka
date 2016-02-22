@@ -6,30 +6,24 @@ using Chuye.Kafka.Protocol.Implement;
 
 namespace Chuye.Kafka {
     public class Client {
-        private readonly String _host;
-        private readonly Int32 _port;
+        private readonly Option _option;
         private readonly IBufferManager _bufferManager;
 
-        public Client(Option option)
-            : this(option.Host, option.Port) {
-        }
-
-        public Client(String host, Int32 port) {
-            _host = host;
-            _port = port;
-            _bufferManager = new BufferManager(4096, 10);
+        public Client(Option option) {
+            _option = option;
+            _bufferManager = new BufferManager(option.BufferSize, option.BufferBlock);
         }
 
         public IResponseDispatcher Send(Request request) {
             using (var socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             using (var requestBuffer = _bufferManager.Borrow()) {
                 var requestBytes = request.Serialize(requestBuffer.Segment);
-                socket.Connect(_host, _port);
+                socket.Connect(_option.Host, _option.Port);
                 socket.Send(requestBuffer.Segment.Array, requestBuffer.Segment.Offset,
                     requestBytes.Count, SocketFlags.None);
 
                 var produceRequest = request as ProduceRequest;
-                if (produceRequest != null && produceRequest.RequiredAcks == AcknowlegeStrategy.Async) {
+                if (produceRequest != null && produceRequest.RequiredAcks == AcknowlegeStrategy.Async) {                    
                     socket.Close();
                     return null;
                 }

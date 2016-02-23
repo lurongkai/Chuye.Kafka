@@ -20,7 +20,7 @@ namespace Chuye.Kafka.Protocol.Implement {
         public Int32 ConsumerGroupGenerationId { get; set; }
         public String ConsumerId { get; set; }
         public Int64 RetentionTime { get; set; }
-        public OffsetCommitRequestTopicPartition[] Partitions { get; set; }
+        public OffsetCommitRequestTopicPartition[] TopicPartitions { get; set; }
 
         public OffsetCommitRequest()
             : base(ApiKey.OffsetCommitRequest) {
@@ -32,9 +32,9 @@ namespace Chuye.Kafka.Protocol.Implement {
             writer.Write(ConsumerId);
             writer.Write(RetentionTime);
 
-            writer.Write(Partitions.Length);
-            for (int i = 0; i < Partitions.Length; i++) {
-                Partitions[i].SaveTo(writer);
+            writer.Write(TopicPartitions.Length);
+            for (int i = 0; i < TopicPartitions.Length; i++) {
+                TopicPartitions[i].SaveTo(writer);
             }
         }
     }

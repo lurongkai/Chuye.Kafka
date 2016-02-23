@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Chuye.Kafka.Protocol {
 
-    public enum ErrorCode /*: Int16*/ {
+    public enum ErrorCode : short {
         //No error--it worked!
         NoError = 0,
         //An unexpected server error

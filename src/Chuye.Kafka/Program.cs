@@ -97,9 +97,9 @@ namespace Chuye.Kafka {
             //request.ConsumerGroupGenerationId = 1;
             request.ConsumerId = "c1";
             request.RetentionTime = 0;
-            request.Partitions = new OffsetCommitRequestTopicPartition[1];
+            request.TopicPartitions = new OffsetCommitRequestTopicPartition[1];
             var partition
-                = request.Partitions[0]
+                = request.TopicPartitions[0]
                 = new OffsetCommitRequestTopicPartition();
             partition.TopicName = DemoTopic;
             partition.Details = new OffsetCommitRequestTopicPartitionDetail[1];

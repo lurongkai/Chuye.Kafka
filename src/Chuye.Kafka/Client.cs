@@ -13,11 +13,9 @@ namespace Chuye.Kafka {
         private readonly Option _option;
         private readonly BufferManager _bufferManager;
         private readonly SocketManager _socketManager;
-        private readonly Int32 _blockBufferSize;
 
         public Client(Option option) {
             _option = option;
-            _blockBufferSize = option.BlockBufferSize;
             _bufferManager = BufferManager.CreateBufferManager(option.MaxBufferSize, option.MaxBufferSize);
             _socketManager = new SocketManager();
         }
@@ -27,8 +25,8 @@ namespace Chuye.Kafka {
             Byte[] requestBytes = null;
             try {
                 socket = _socketManager.Obtain();
-                requestBytes = _bufferManager.TakeBuffer(_blockBufferSize);
-                var requestBytesCount = request.Serialize(new ArraySegment<Byte>(requestBytes));
+                requestBytes = _bufferManager.TakeBuffer(_option.RequestBufferSize);
+                var requestBytesCount = request.Serialize(requestBytes, 0);
                 if (!socket.Connected) {
                     socket.Connect(_option.Host, _option.Port);
                 }
@@ -39,7 +37,7 @@ namespace Chuye.Kafka {
                 }
 
                 const Int32 lengthBytesSize = 4;
-                var responseBytes = _bufferManager.TakeBuffer(_blockBufferSize);
+                var responseBytes = _bufferManager.TakeBuffer(_option.ResponseBufferSize);
                 var beginningBytesReceived = socket.Receive(responseBytes, 0, lengthBytesSize, SocketFlags.None);
                 if (beginningBytesReceived < lengthBytesSize) {
                     throw new SocketException((Int32)SocketError.SocketError);
@@ -71,8 +69,8 @@ namespace Chuye.Kafka {
         public IResponseDispatcher Send_(Request request) {
             Byte[] requestBytes = null;
             try {
-                requestBytes = _bufferManager.TakeBuffer(_blockBufferSize);
-                var requestBytesCount = request.Serialize(new ArraySegment<byte>(requestBytes));
+                requestBytes = _bufferManager.TakeBuffer(_option.RequestBufferSize);
+                var requestBytesCount = request.Serialize(requestBytes, 0);
                 using (var tcpClient = new TcpClient(_option.Host, _option.Port))
                 using (var stream = tcpClient.GetStream()) {
                     stream.Write(requestBytes, 0, requestBytesCount);
@@ -82,7 +80,7 @@ namespace Chuye.Kafka {
                     }
 
                     const Int32 lengthBytesSize = 4;
-                    var responseBytes = _bufferManager.TakeBuffer(_blockBufferSize);
+                    var responseBytes = _bufferManager.TakeBuffer(_option.ResponseBufferSize);
                     var beginningBytesReceived = stream.Read(responseBytes, 0, lengthBytesSize);
 
                     if (beginningBytesReceived < lengthBytesSize) {
@@ -115,8 +113,8 @@ namespace Chuye.Kafka {
         public async Task<IResponseDispatcher> SendAsync(Request request) {
             Byte[] requestBytes = null;
             try {
-                requestBytes = _bufferManager.TakeBuffer(_blockBufferSize);
-                var requestBytesCount = request.Serialize(new ArraySegment<byte>(requestBytes));
+                requestBytes = _bufferManager.TakeBuffer(_option.RequestBufferSize);
+                var requestBytesCount = request.Serialize(requestBytes, 0);
                 using (var tcpClient = new TcpClient(_option.Host, _option.Port))
                 using (var stream = tcpClient.GetStream()) {
                     await stream.WriteAsync(requestBytes, 0, requestBytesCount);
@@ -127,7 +125,7 @@ namespace Chuye.Kafka {
                     }
 
                     const Int32 lengthBytesSize = 4;
-                    var responseBytes = _bufferManager.TakeBuffer(_blockBufferSize);
+                    var responseBytes = _bufferManager.TakeBuffer(_option.ResponseBufferSize);
                     var beginningBytesReceived = await stream.ReadAsync(responseBytes, 0, lengthBytesSize);
                     if (beginningBytesReceived < lengthBytesSize) {
                         throw new SocketException((Int32)SocketError.SocketError);

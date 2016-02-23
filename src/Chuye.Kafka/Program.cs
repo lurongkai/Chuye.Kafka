@@ -8,13 +8,13 @@ using Chuye.Kafka.Protocol.Implement.Management;
 
 namespace Chuye.Kafka {
     class Program {
-        const String DemoTopic = "demo-topic";
+        const String DemoTopic = "demo-topic";        
 
         static void Main(string[] args) {
             Debug.Listeners.Clear();
             //Debug.Listeners.Add(new TextWriterTraceListener(Console.Out));
             //ProduceDemo();
-            //ConsumerDemo();
+            ConsumerDemo();
             //SendMessag_Async();
 
             if (Debugger.IsAttached) {
@@ -45,9 +45,9 @@ namespace Chuye.Kafka {
         static void ConsumerDemo() {
             var option   = Option.LoadDefault();
             var consumer = new Consumer(option);
-            var metadata = consumer.FetchMetadata(DemoTopic);
-            var offset   = consumer.FetchOffset(DemoTopic);
-            var messages = consumer.Fetch(DemoTopic, offset);
+            var metadata = consumer.Metadata(DemoTopic);
+            var offset   = consumer.Offset(DemoTopic);
+            var messages = consumer.FetchAll(DemoTopic, 0);
 
             foreach (var msg in messages) {
                 Console.WriteLine(msg);

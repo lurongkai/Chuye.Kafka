@@ -29,6 +29,9 @@ namespace Chuye.Kafka.Protocol {
                 set.FetchFrom(reader);
                 sets.Add(set);
             }
+            if (reader.Offset - begin > _messageSetSize) {
+                sets.RemoveAt(sets.Count - 1);
+            }
             Items = sets.ToArray();
         }
 
@@ -56,10 +59,10 @@ namespace Chuye.Kafka.Protocol {
         public void SaveTo(BufferWriter writer) {
             writer.Write(Offset);
             //writer.Write(MessageSize);
-            using (var compute = writer.PrepareLength()) {
-                Message.SaveTo(writer);
-                MessageSize = compute.Output;
-            }
+            var compute = writer.PrepareLength();
+            Message.SaveTo(writer);
+            compute.Dispose();
+            MessageSize = compute.Output;
         }
     }
     //Message => Crc MagicByte Attributes Key Value
@@ -85,13 +88,13 @@ namespace Chuye.Kafka.Protocol {
 
         public void SaveTo(BufferWriter writer) {
             //writer.Write(Crc);
-            using (var compute = writer.PrepareCrc()) {
-                writer.Write(MagicByte);
-                writer.Write(Attributes);
-                writer.Write(Key);
-                writer.Write(Value);
-                Crc = compute.Output;
-            }
+            var compute = writer.PrepareCrc();
+            writer.Write(MagicByte);
+            writer.Write(Attributes);
+            writer.Write(Key);
+            writer.Write(Value);
+            compute.Dispose();
+            Crc = compute.Output;
         }
     }
 }

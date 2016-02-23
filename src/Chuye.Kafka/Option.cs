@@ -12,7 +12,8 @@ namespace Chuye.Kafka {
         public Int32 Port;
         public Int32 MaxBufferPoolSize;
         public Int32 MaxBufferSize;
-        public Int32 BlockBufferSize;
+        public Int32 RequestBufferSize;
+        public Int32 ResponseBufferSize;
 
         public static Option LoadDefault() {
             var config = ConfigurationManager.AppSettings.Get("kafka:server");
@@ -34,12 +35,17 @@ namespace Chuye.Kafka {
             }
         }
 
-        public Option(String host, Int32 port, Int32 maxBufferPoolSize = 1024 * 1024, Int32 maxBufferSize = 4096, Int32 blockBufferSize = 4096) {
-            Host = host;
-            Port = port;
-            MaxBufferPoolSize = maxBufferPoolSize;
-            MaxBufferSize = maxBufferSize;
-            BlockBufferSize = blockBufferSize;
+        public Option(String host, Int32 port,
+            Int32 maxBufferPoolSize  = 1024 * 1024,
+            Int32 maxBufferSize      = 4096,
+            Int32 requestBufferSize  = 4096,
+            Int32 responseBufferSize = 1024 * 64) {
+            Host               = host;
+            Port               = port;
+            MaxBufferPoolSize  = maxBufferPoolSize;
+            MaxBufferSize      = maxBufferSize;
+            RequestBufferSize  = requestBufferSize;
+            ResponseBufferSize = responseBufferSize;
         }
     }
 }

@@ -48,13 +48,14 @@ namespace Chuye.Kafka.Protocol {
         }
 
         public virtual void SaveTo(BufferWriter writer) {
-            using (writer.PrepareLength()) {
-                writer.Write((Int16)ApiKey);
-                writer.Write(ApiVersion);
-                writer.Write(CorrelationId);
-                writer.Write(ClientId);
-                SerializeContent(writer);
-            }
+            var compute = writer.PrepareLength();
+            writer.Write((Int16)ApiKey);
+            writer.Write(ApiVersion);
+            writer.Write(CorrelationId);
+            writer.Write(ClientId);
+            SerializeContent(writer);
+            compute.Dispose();
+            Size = compute.Output;
         }
 
         protected abstract void SerializeContent(BufferWriter writer);

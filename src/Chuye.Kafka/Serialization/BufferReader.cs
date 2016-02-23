@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -33,6 +34,10 @@ namespace Chuye.Kafka.Serialization {
             }
             if (length == 0) {
                 return new Byte[0];
+            }
+            if (length < 0) {
+                Debug.WriteLine("Error length of value {0}", length);
+                return null;
             }
             var buffer = new Byte[length];
             for (int i = 0; i < length; i++) {

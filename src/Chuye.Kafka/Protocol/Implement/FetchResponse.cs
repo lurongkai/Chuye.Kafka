@@ -55,15 +55,15 @@ namespace Chuye.Kafka.Protocol.Implement {
         public ErrorCode ErrorCode { get; set; }
         public Int64 HighwaterMarkOffset { get; set; }
         public Int32 MessageSetSize { get; set; }
-        public MessageSetCollection MessageSets { get; set; }
+        public MessageSetCollection MessageSet { get; set; }
 
         public void FetchFrom(BufferReader reader) {
             Partition = reader.ReadInt32();
             ErrorCode = (ErrorCode)reader.ReadInt16();
             HighwaterMarkOffset = reader.ReadInt64();
             MessageSetSize = reader.ReadInt32();
-            MessageSets = new MessageSetCollection(MessageSetSize);
-            MessageSets.FetchFrom(reader);
+            MessageSet = new MessageSetCollection(MessageSetSize);
+            MessageSet.FetchFrom(reader);
         }
     }
 }

@@ -8,7 +8,7 @@ using Chuye.Kafka.Protocol.Implement.Management;
 
 namespace Chuye.Kafka {
     class Program {
-        const String DemoTopic = "demo-topic";        
+        const String DemoTopic = "demo-topic";
 
         static void Main(string[] args) {
             Debug.Listeners.Clear();
@@ -43,10 +43,10 @@ namespace Chuye.Kafka {
 
         #region high level api demo
         static void ConsumerDemo() {
-            var option   = Option.LoadDefault();
+            var option = Option.LoadDefault();
             var consumer = new Consumer(option);
             var metadata = consumer.Metadata(DemoTopic);
-            var offset   = consumer.Offset(DemoTopic);
+            var offset = consumer.Offset(DemoTopic);
             var messages = consumer.FetchAll(DemoTopic, 0);
 
             foreach (var msg in messages) {
@@ -91,21 +91,21 @@ namespace Chuye.Kafka {
         }
 
         static void ProceedOffsetCommit() {
-            var request = new OffsetCommitRequest();
+            var request = (OffsetCommitRequestV2)OffsetCommitRequest.Create(2);
             request.ApiVersion = 2;
-            request.ConsumerGroupId = "cg1";
+            request.ConsumerGroup = "cg1";
             //request.ConsumerGroupGenerationId = 1;
             request.ConsumerId = "c1";
             request.RetentionTime = 0;
-            request.TopicPartitions = new OffsetCommitRequestTopicPartition[1];
+            request.TopicPartitions = new OffsetCommitRequestTopicPartitionV0[1];
             var partition
                 = request.TopicPartitions[0]
-                = new OffsetCommitRequestTopicPartition();
+                = new OffsetCommitRequestTopicPartitionV0();
             partition.TopicName = DemoTopic;
-            partition.Details = new OffsetCommitRequestTopicPartitionDetail[1];
+            partition.Details = new OffsetCommitRequestTopicPartitionDetailV0[1];
             var detail
                 = partition.Details[0]
-                = new OffsetCommitRequestTopicPartitionDetail();
+                = new OffsetCommitRequestTopicPartitionDetailV0();
             detail.Partition = 0;
             detail.Offset = 1;
 

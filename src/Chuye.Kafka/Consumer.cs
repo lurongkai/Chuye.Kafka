@@ -8,7 +8,7 @@ using Chuye.Kafka.Protocol;
 using Chuye.Kafka.Protocol.Implement;
 
 namespace Chuye.Kafka {
-    public class Consumer {
+    public class Consumer : IDisposable {
         private readonly Client _client;
 
         public Consumer(Option option) {
@@ -54,6 +54,49 @@ namespace Chuye.Kafka {
                 }
 
                 return response.TopicPartitions[0].Offsets[0].Offsets[0];
+            }
+        }
+
+        public void OffsetCommit(String topicName, String consumerGroup, Int64 offset) {
+            var request = new OffsetCommitRequestV0();
+            request.ConsumerGroup = consumerGroup;
+            request.TopicPartitions = new OffsetCommitRequestTopicPartitionV0[1];
+            var partition = request.TopicPartitions[0] = new OffsetCommitRequestTopicPartitionV0();
+            partition.TopicName = topicName;
+            partition.Details = new OffsetCommitRequestTopicPartitionDetailV0[1];
+            var detail = partition.Details[0] = new OffsetCommitRequestTopicPartitionDetailV0();
+            detail.Partition = 0;
+            detail.Offset = offset;
+
+            using (var responseDispatcher = _client.Send(request)) {
+                var offsetCommitResponse = (OffsetCommitResponse)responseDispatcher.ParseResult();
+                var errros = offsetCommitResponse.TopicPartitions
+                    .SelectMany(r => r.Details)
+                    .Where(x => x.ErrorCode != ErrorCode.NoError);
+                if (errros.Any()) {
+                    throw new KafkaException(errros.First().ErrorCode);
+                }
+            }
+        }
+
+        public Int64 OffsetFetch(String topicName, String consumerGroup) {
+            var request = new OffsetFetchRequest();
+            request.ConsumerGroup = consumerGroup;
+            request.TopicPartitions = new OffsetFetchRequestTopicPartition[1];
+            var partition = request.TopicPartitions[0] = new OffsetFetchRequestTopicPartition();
+            partition.TopicName = topicName;
+            partition.Partitions = new[] { 0 };
+
+            using (var responseDispatcher = _client.Send(request)) {
+                var offsetFetchResponse = (OffsetFetchResponse)responseDispatcher.ParseResult();
+                var errros = offsetFetchResponse.TopicPartitions
+                    .SelectMany(r => r.Details)
+                    .Where(x => x.ErrorCode != ErrorCode.NoError);
+                if (errros.Any()) {
+                    throw new KafkaException(errros.First().ErrorCode);
+                }
+
+                return offsetFetchResponse.TopicPartitions[0].Details[0].Offset;
             }
         }
 
@@ -106,6 +149,10 @@ namespace Chuye.Kafka {
                     yield return new OffsetKeyedMessage(msg.Offset, key, message);
                 }
             }
+        }
+
+        public void Dispose() {
+            _client.Dispose();
         }
     }
 }

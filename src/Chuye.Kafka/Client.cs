@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Chuye.Kafka.Protocol;
 using Chuye.Kafka.Protocol.Implement;
+using Chuye.Kafka.Serialization;
 
 namespace Chuye.Kafka {
     public class Client : IDisposable {
@@ -43,7 +44,7 @@ namespace Chuye.Kafka {
                 if (beginningBytesReceived < lengthBytesSize) {
                     throw new SocketException((Int32)SocketError.SocketError);
                 }
-                var expectedBodyReader = new Reader(responseBytes, 0);
+                var expectedBodyReader = new BufferReader(responseBytes, 0);
                 var expectedBodyBytesSize = expectedBodyReader.ReadInt32();
                 Debug.WriteLine("Expected body bytes size is {0}", expectedBodyBytesSize);
                 var receivedBodyBytesSize = 0;
@@ -87,7 +88,7 @@ namespace Chuye.Kafka {
                     if (beginningBytesReceived < lengthBytesSize) {
                         throw new SocketException((Int32)SocketError.SocketError);
                     }
-                    var expectedBodyReader = new Reader(responseBytes, 0);
+                    var expectedBodyReader = new BufferReader(responseBytes, 0);
                     var expectedBodyBytesSize = expectedBodyReader.ReadInt32();
                     Debug.WriteLine("Expected body bytes size is {0}", expectedBodyBytesSize);
                     var receivedBodyBytesSize = 0;
@@ -131,7 +132,7 @@ namespace Chuye.Kafka {
                     if (beginningBytesReceived < lengthBytesSize) {
                         throw new SocketException((Int32)SocketError.SocketError);
                     }
-                    var expectedBodyReader = new Reader(responseBytes, 0);
+                    var expectedBodyReader = new BufferReader(responseBytes, 0);
                     var expectedBodyBytesSize = expectedBodyReader.ReadInt32();
                     Debug.WriteLine("Expected body bytes size is {0}", expectedBodyBytesSize);
                     var receivedBodyBytesSize = 0;

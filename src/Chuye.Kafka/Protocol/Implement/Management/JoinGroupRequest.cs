@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Chuye.Kafka.Serialization;
 
 namespace Chuye.Kafka.Protocol.Implement.Management {
     //JoinGroupRequest => GroupId SessionTimeout MemberId ProtocolType GroupProtocols
@@ -24,7 +25,7 @@ namespace Chuye.Kafka.Protocol.Implement.Management {
             : base(ApiKey.JoinGroupRequest) {
         }
 
-        protected override void SerializeContent(Writer writer) {
+        protected override void SerializeContent(BufferWriter writer) {
             writer.Write(GroupId);
             writer.Write(SessionTimeout);
             writer.Write(MemberId);
@@ -41,7 +42,7 @@ namespace Chuye.Kafka.Protocol.Implement.Management {
         public String ProtocolName { get; set; }
         public Byte[] ProtocolMetadata { get; set; }
 
-        public void SaveTo(Writer writer) {
+        public void SaveTo(BufferWriter writer) {
             writer.Write(ProtocolName);
             writer.Write(ProtocolMetadata);
         }

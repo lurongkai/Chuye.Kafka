@@ -1,22 +1,17 @@
 ﻿using System;
 using System.Text;
 
-namespace Chuye.Kafka.Protocol {
-    public interface ICompute : IDisposable {
-        Int32 Value { get; }
-    }
-
-
-    public class Writer {
+namespace Chuye.Kafka.Serialization {
+    public class BufferWriter {
         private readonly Byte[] _bytes;
         private Int32 _startOffset;
         private Int32 _currentOffset;
 
-        public Writer(ArraySegment<Byte> buffer)
+        public BufferWriter(ArraySegment<Byte> buffer)
             : this(buffer.Array, buffer.Offset) {
         }
 
-        public Writer(Byte[] bytes, Int32 offset) {
+        public BufferWriter(Byte[] bytes, Int32 offset) {
             _bytes         = bytes;
             _startOffset   = offset;
             _currentOffset = offset;
@@ -26,13 +21,13 @@ namespace Chuye.Kafka.Protocol {
             get { return _currentOffset - _startOffset; }
         }
 
-        public ICompute PrepareCrc() {
+        public IComputable PrepareCrc() {
             var previousPosition = _currentOffset;
             Write(0);
             return new CrcWriter(this, previousPosition);
         }
 
-        public ICompute PrepareLength() {
+        public IComputable PrepareLength() {
             var previousPosition = _currentOffset;
             Write(0);
             return new PositionWriter(this, previousPosition);
@@ -42,7 +37,7 @@ namespace Chuye.Kafka.Protocol {
             _currentOffset = 0;
         }
 
-        public Writer Write(Int64 value) {
+        public BufferWriter Write(Int64 value) {
             //Write(BitConverter.GetBytes(value).Reverse().ToArray(), false);
             _bytes[_currentOffset++] = (byte)((value >> 56));
             _bytes[_currentOffset++] = (byte)((value >> 48));
@@ -55,7 +50,7 @@ namespace Chuye.Kafka.Protocol {
             return this;
         }
 
-        public Writer Write(Int32 value) {
+        public BufferWriter Write(Int32 value) {
             //Write(BitConverter.GetBytes(value).Reverse().ToArray(), false);
             _bytes[_currentOffset++] = (byte)((value >> 24));
             _bytes[_currentOffset++] = (byte)((value >> 16));
@@ -64,19 +59,19 @@ namespace Chuye.Kafka.Protocol {
             return this;
         }
 
-        public Writer Write(Int16 value) {
+        public BufferWriter Write(Int16 value) {
             //Write(BitConverter.GetBytes(value).Reverse().ToArray(), false);
             _bytes[_currentOffset++] = (byte)((value >> 8));
             _bytes[_currentOffset++] = (byte)(value);
             return this;
         }
 
-        public Writer Write(Byte value) {
+        public BufferWriter Write(Byte value) {
             _bytes[_currentOffset++] = value;
             return this;
         }
 
-        public Writer Write(Byte[] bytes) {
+        public BufferWriter Write(Byte[] bytes) {
             if (bytes == null) {
                 Write(-1);
                 return this;
@@ -89,7 +84,7 @@ namespace Chuye.Kafka.Protocol {
             return this;
         }
 
-        public Writer Write(String value) {
+        public BufferWriter Write(String value) {
             if (value == null) {
                 Write((Int16)(-1));
                 return this;
@@ -103,13 +98,13 @@ namespace Chuye.Kafka.Protocol {
             return this;
         }
 
-        private class CrcWriter : ICompute {
+        private class CrcWriter : IComputable {
             private Int32 _previousPosition;
-            private Writer _writer;
+            private BufferWriter _writer;
 
-            public Int32 Value { get; private set; }
+            public Int32 Output { get; private set; }
 
-            public CrcWriter(Writer writer, Int32 previousPosition) {
+            public CrcWriter(BufferWriter writer, Int32 previousPosition) {
                 _writer = writer;
                 _previousPosition = previousPosition;
             }
@@ -122,17 +117,17 @@ namespace Chuye.Kafka.Protocol {
                 _writer.Write(crc);
                 _writer._currentOffset = currentPosition;
 
-                Value = crc;
+                Output = crc;
             }
         }
 
-        private class PositionWriter : ICompute {
+        private class PositionWriter : IComputable {
             private Int32 _previousPosition;
-            private Writer _writer;
+            private BufferWriter _writer;
 
-            public Int32 Value { get; private set; }
+            public Int32 Output { get; private set; }
 
-            public PositionWriter(Writer writer, Int32 previousPosition) {
+            public PositionWriter(BufferWriter writer, Int32 previousPosition) {
                 _writer = writer;
                 _previousPosition = previousPosition;
             }
@@ -144,7 +139,7 @@ namespace Chuye.Kafka.Protocol {
                 _writer.Write(length);
                 _writer._currentOffset = currentPosition;
 
-                Value = length;
+                Output = length;
             }
         }
     }

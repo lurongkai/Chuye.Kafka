@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Chuye.Kafka.Serialization;
 
 namespace Chuye.Kafka.Protocol.Implement {
     //FetchRequest => ReplicaId MaxWaitTime MinBytes [TopicName [Partition FetchOffset MaxBytes]]
@@ -20,10 +21,10 @@ namespace Chuye.Kafka.Protocol.Implement {
         public TopicPartition[] TopicPartitions { get; set; }
 
         public FetchRequest()
-            : base(Protocol.ApiKey.FetchRequest) {
+            : base(ApiKey.FetchRequest) {
         }
 
-        protected override void SerializeContent(Writer writer) {
+        protected override void SerializeContent(BufferWriter writer) {
             writer.Write(ReplicaId);
             writer.Write(MaxWaitTime);
             writer.Write(MinBytes);
@@ -39,7 +40,7 @@ namespace Chuye.Kafka.Protocol.Implement {
         public String TopicName { get; set; }
         public FetchOffsetDetail[] FetchOffsetDetails { get; set; }
 
-        public void SaveTo(Writer writer) {
+        public void SaveTo(BufferWriter writer) {
             writer.Write(TopicName);
             if (FetchOffsetDetails == null) {
                 writer.Write(0);
@@ -58,7 +59,7 @@ namespace Chuye.Kafka.Protocol.Implement {
         public Int64 FetchOffset { get; set; }
         public Int32 MaxBytes { get; set; }
 
-        public void SaveTo(Writer writer) {
+        public void SaveTo(BufferWriter writer) {
             writer.Write(Partition);
             writer.Write(FetchOffset);
             writer.Write(MaxBytes);

@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Chuye.Kafka.Serialization;
 
 namespace Chuye.Kafka.Protocol.Implement.Management {
     //DescribeGroupsRequest => [GroupId]
@@ -16,7 +17,7 @@ namespace Chuye.Kafka.Protocol.Implement.Management {
             : base(ApiKey.DescribeGroupsRequest) {
         }
 
-        protected override void SerializeContent(Writer writer) {
+        protected override void SerializeContent(BufferWriter writer) {
             writer.Write(GroupId.Length);
             foreach (var item in GroupId) {
                 writer.Write(item);

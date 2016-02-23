@@ -3,9 +3,9 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace Chuye.Kafka.Protocol {
+namespace Chuye.Kafka.Serialization {
 
-    public class Reader {
+    public class BufferReader {
         private Int32 _offset;
         private readonly Byte[] _bytes;
 
@@ -13,11 +13,11 @@ namespace Chuye.Kafka.Protocol {
             get { return _offset; }
         }
 
-        public Reader(ArraySegment<Byte> buffer)
+        public BufferReader(ArraySegment<Byte> buffer)
             : this(buffer.Array, buffer.Offset) {
         }
 
-        public Reader(Byte[] bytes, Int32 offset) {
+        public BufferReader(Byte[] bytes, Int32 offset) {
             _offset = offset;
             _bytes = bytes;
         }

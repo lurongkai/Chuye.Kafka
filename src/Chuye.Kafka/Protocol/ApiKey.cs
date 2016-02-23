@@ -5,21 +5,21 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Chuye.Kafka.Protocol {
-    public enum ApiKey : Int16 {
+    public enum ApiKey /*: Int16*/ {
         //Non-user facing control APIs 4-7 
-        ProduceRequest = 0,
-        FetchRequest = 1,
-        OffsetRequest = 2,
-        MetadataRequest = 3,
+        ProduceRequest      = 0,
+        FetchRequest        = 1,
+        OffsetRequest       = 2,
+        MetadataRequest     = 3,
         OffsetCommitRequest = 8,
-        OffsetFetchRequest = 9,
+        OffsetFetchRequest  = 9,
 
         GroupCoordinatorRequest = 10,
-        JoinGroupRequest = 11,
-        HeartbeatRequest = 12,
-        LeaveGroupRequest = 13,
-        SyncGroupRequest = 14,
-        DescribeGroupsRequest = 15,
-        ListGroupsRequest = 16,
+        JoinGroupRequest        = 11,
+        HeartbeatRequest        = 12,
+        LeaveGroupRequest       = 13,
+        SyncGroupRequest        = 14,
+        DescribeGroupsRequest   = 15,
+        ListGroupsRequest       = 16,
     }
 }

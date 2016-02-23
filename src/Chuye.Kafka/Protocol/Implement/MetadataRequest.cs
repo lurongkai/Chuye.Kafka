@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Chuye.Kafka.Serialization;
 
 namespace Chuye.Kafka.Protocol.Implement {
     //TopicMetadataRequest => [TopicName]
@@ -11,10 +12,10 @@ namespace Chuye.Kafka.Protocol.Implement {
         public String[] TopicNames { get; set; }
 
         public MetadataRequest()
-            : base(Protocol.ApiKey.MetadataRequest) {
+            : base(ApiKey.MetadataRequest) {
         }
 
-        protected override void SerializeContent(Writer writer) {
+        protected override void SerializeContent(BufferWriter writer) {
             writer.Write(TopicNames.Length);
             foreach (var item in TopicNames) {
                 writer.Write(item);

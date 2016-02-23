@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Chuye.Kafka.Serialization;
 
 namespace Chuye.Kafka.Protocol.Implement.Management {
     //SyncGroupRequest => GroupId GenerationId MemberId GroupAssignment
@@ -22,7 +23,7 @@ namespace Chuye.Kafka.Protocol.Implement.Management {
             : base(ApiKey.SyncGroupRequest) {
         }
 
-        protected override void SerializeContent(Writer writer) {
+        protected override void SerializeContent(BufferWriter writer) {
             writer.Write(GroupId);
             writer.Write(GenerationId);
             writer.Write(MemberId);
@@ -38,7 +39,7 @@ namespace Chuye.Kafka.Protocol.Implement.Management {
         public String MemberId { get; set; }
         public Byte[] MemberAssignment { get; set; }
 
-        public void SaveTo(Writer writer) {
+        public void SaveTo(BufferWriter writer) {
             writer.Write(MemberId);
             writer.Write(MemberAssignment);
         }

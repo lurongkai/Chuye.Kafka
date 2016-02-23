@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Chuye.Kafka.Serialization;
 
 namespace Chuye.Kafka.Protocol.Implement.Management {
     //JoinGroupResponse => ErrorCode GenerationId GroupProtocol LeaderId MemberId Members
@@ -29,7 +30,7 @@ namespace Chuye.Kafka.Protocol.Implement.Management {
         public String LeaderId { get; set; }
         public JoinGroupResponseMember[] Members { get; set; }
 
-        protected override void DeserializeContent(Reader reader) {
+        protected override void DeserializeContent(BufferReader reader) {
             ErrorCode = (ErrorCode)reader.ReadInt16();
             GenerationId = reader.ReadInt32();
             GroupProtocol = reader.ReadString();
@@ -50,7 +51,7 @@ namespace Chuye.Kafka.Protocol.Implement.Management {
         public String MemberId { get; set; }
         public Byte[] MemberMetadata { get; set; }
 
-        public void FetchFrom(Reader reader) {
+        public void FetchFrom(BufferReader reader) {
             MemberId = reader.ReadString();
             MemberMetadata = reader.ReadBytes();
         }

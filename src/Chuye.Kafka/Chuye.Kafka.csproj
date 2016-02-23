@@ -53,6 +53,9 @@
     <Compile Include="Producer.cs" />
     <Compile Include="Protocol\ReponseDispatcher.cs" />
     <Compile Include="Protocol\SocketManager.cs" />
+    <Compile Include="Serialization\IComputable.cs" />
+    <Compile Include="Serialization\IReadable.cs" />
+    <Compile Include="Serialization\IWriteable.cs" />
     <Compile Include="Utils\DataAnnotationHelper.cs" />
     <Compile Include="Protocol\Implement\Management\DescribeGroupsRequest.cs" />
     <Compile Include="Protocol\Implement\Management\DescribeGroupsResponse.cs" />
@@ -85,11 +88,11 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Protocol\Implement\ProduceResponse.cs" />
     <Compile Include="Protocol\MessageSets.cs" />
-    <Compile Include="Protocol\Reader.cs" />
+    <Compile Include="Serialization\BufferReader.cs" />
     <Compile Include="Protocol\Request.cs" />
     <Compile Include="Protocol\ApiKey.cs" />
     <Compile Include="Protocol\Response.cs" />
-    <Compile Include="Protocol\Writer.cs" />
+    <Compile Include="Serialization\BufferWriter.cs" />
     <Compile Include="Utils\DateTimeExtension.cs" />
   </ItemGroup>
   <ItemGroup>

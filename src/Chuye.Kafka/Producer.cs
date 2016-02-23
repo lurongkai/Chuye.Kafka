@@ -82,7 +82,7 @@ namespace Chuye.Kafka {
     ///   If it is -1 the server will block until the message is committed by all in sync replicas before sending a response. 
     ///   For any number > 1 the server will block waiting for this number of acknowledgements to occur (but the server will never wait for more acknowledgements than there are in-sync replicas).
     /// </summary>
-    public enum AcknowlegeStrategy : Int16 {
+    public enum AcknowlegeStrategy /*: Int16 */ {
         Immediate = 0, Written = 1, Block = -1
     }
 

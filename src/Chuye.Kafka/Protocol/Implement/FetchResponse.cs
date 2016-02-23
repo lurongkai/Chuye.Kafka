@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Chuye.Kafka.Serialization;
 
 namespace Chuye.Kafka.Protocol.Implement {
     //FetchResponse => [TopicName [Partition ErrorCode HighwaterMarkOffset MessageSetSize MessageSet]]
@@ -15,7 +16,7 @@ namespace Chuye.Kafka.Protocol.Implement {
     public class FetchResponse : Response {
         public FetchResponseTopicPartition[] TopicPartitions { get; set; }
 
-        protected override void DeserializeContent(Reader reader) {
+        protected override void DeserializeContent(BufferReader reader) {
             var size = reader.ReadInt32();
             TopicPartitions = new FetchResponseTopicPartition[size];
             for (int i = 0; i < TopicPartitions.Length; i++) {
@@ -29,7 +30,7 @@ namespace Chuye.Kafka.Protocol.Implement {
         public String TopicName { get; set; }
         public MessageBody[] MessageBodys { get; set; }
 
-        public void FetchFrom(Reader reader) {
+        public void FetchFrom(BufferReader reader) {
             TopicName = reader.ReadString();
             var size = reader.ReadInt32();
             if (size == -1) {
@@ -56,7 +57,7 @@ namespace Chuye.Kafka.Protocol.Implement {
         public Int32 MessageSetSize { get; set; }
         public MessageSetCollection MessageSets { get; set; }
 
-        public void FetchFrom(Reader reader) {
+        public void FetchFrom(BufferReader reader) {
             Partition = reader.ReadInt32();
             ErrorCode = (ErrorCode)reader.ReadInt16();
             HighwaterMarkOffset = reader.ReadInt64();

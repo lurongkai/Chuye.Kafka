@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Chuye.Kafka.Serialization;
 
 namespace Chuye.Kafka.Protocol.Implement {
     //OffsetCommitRequest => ConsumerGroup ConsumerGroupGenerationId ConsumerId RetentionTime [TopicName [Partition Offset Metadata]]
@@ -22,10 +23,10 @@ namespace Chuye.Kafka.Protocol.Implement {
         public OffsetCommitRequestTopicPartition[] Partitions { get; set; }
 
         public OffsetCommitRequest()
-            : base(Protocol.ApiKey.OffsetCommitRequest) {
+            : base(ApiKey.OffsetCommitRequest) {
         }
 
-        protected override void SerializeContent(Writer writer) {
+        protected override void SerializeContent(BufferWriter writer) {
             writer.Write(ConsumerGroupId);
             writer.Write(ConsumerGroupGenerationId);
             writer.Write(ConsumerId);
@@ -42,7 +43,7 @@ namespace Chuye.Kafka.Protocol.Implement {
         public String TopicName { get; set; }
         public OffsetCommitRequestTopicPartitionDetail[] Details { get; set; }
 
-        public void SaveTo(Writer writer) {
+        public void SaveTo(BufferWriter writer) {
             writer.Write(TopicName);
             writer.Write(Details.Length);
             for (int i = 0; i < Details.Length; i++) {
@@ -56,7 +57,7 @@ namespace Chuye.Kafka.Protocol.Implement {
         public Int64 Offset { get; set; }
         public String Metadata { get; set; }
 
-        public void SaveTo(Writer writer) {
+        public void SaveTo(BufferWriter writer) {
             writer.Write(Partition);
             writer.Write(Offset);
             writer.Write(Metadata);

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Chuye.Kafka.Serialization;
 
 namespace Chuye.Kafka.Protocol {
     //RequestOrResponse => Size (RequestMessage | ResponseMessage)
@@ -15,18 +16,18 @@ namespace Chuye.Kafka.Protocol {
     public abstract class Response {
         public Int32 Size;
         public Int32 CorrelationId;
-        
-        public virtual void Read(ArraySegment<Byte> buffer) {
+
+        public void Read(ArraySegment<Byte> buffer) {
             Read(buffer.Array, buffer.Offset);
         }
 
-        public void Read(Byte[] buffer, Int32 offset) {
-            var reader = new Reader(buffer, offset);
+        public void Read(Byte[] bytes, Int32 offset) {
+            var reader = new BufferReader(bytes, offset);
             Size = reader.ReadInt32();
             CorrelationId = reader.ReadInt32();
             DeserializeContent(reader);
         }
 
-        protected abstract void DeserializeContent(Reader reader);
+        protected abstract void DeserializeContent(BufferReader reader);
     }
 }

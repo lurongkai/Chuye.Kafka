@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Chuye.Kafka.Serialization;
 
 namespace Chuye.Kafka.Protocol.Implement {
     //ProduceResponse => [TopicName [Partition ErrorCode Offset]]
@@ -13,7 +14,7 @@ namespace Chuye.Kafka.Protocol.Implement {
     public class ProduceResponse : Response {
         public ProduceResponseTopicPartition[] TopicPartitions { get; set; }
 
-        protected override void DeserializeContent(Reader reader) {
+        protected override void DeserializeContent(BufferReader reader) {
             TopicPartitions = new ProduceResponseTopicPartition[reader.ReadInt32()];
             for (int i = 0; i < TopicPartitions.Length; i++) {
                 TopicPartitions[i] = new ProduceResponseTopicPartition();
@@ -26,7 +27,7 @@ namespace Chuye.Kafka.Protocol.Implement {
         public String TopicName { get; set; }
         public ProduceResponseTopicPartitionDetail[] Offsets { get; set; }
 
-        public void FetchFrom(Reader reader) {
+        public void FetchFrom(BufferReader reader) {
             TopicName = reader.ReadString();
             Offsets = new ProduceResponseTopicPartitionDetail[reader.ReadInt32()];
             for (int i = 0; i < Offsets.Length; i++) {
@@ -42,7 +43,7 @@ namespace Chuye.Kafka.Protocol.Implement {
         public ErrorCode ErrorCode { get; set; }
         public Int64 Offset { get; set; }
 
-        public void FetchFrom(Reader reader) {
+        public void FetchFrom(BufferReader reader) {
             Partition = reader.ReadInt32();
             ErrorCode = (ErrorCode)reader.ReadInt16();
             Offset = reader.ReadInt64();

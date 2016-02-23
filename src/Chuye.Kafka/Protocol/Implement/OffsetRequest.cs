@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Chuye.Kafka.Serialization;
 
 namespace Chuye.Kafka.Protocol.Implement {
     //OffsetRequest => ReplicaId [TopicName [Partition Time MaxNumberOfOffsets]]
@@ -16,10 +17,10 @@ namespace Chuye.Kafka.Protocol.Implement {
         public OffsetsRequestTopicPartition[] TopicPartitions { get; set; }
 
         public OffsetRequest()
-            : base(Protocol.ApiKey.OffsetRequest) {
+            : base(ApiKey.OffsetRequest) {
         }
 
-        protected override void SerializeContent(Writer writer) {
+        protected override void SerializeContent(BufferWriter writer) {
             writer.Write(ReplicaId);
             writer.Write(TopicPartitions.Length);
             foreach (var item in TopicPartitions) {
@@ -32,7 +33,7 @@ namespace Chuye.Kafka.Protocol.Implement {
         public String TopicName { get; set; }
         public OffsetsRequestTopicPartitionDetail[] Details { get; set; }
 
-        public void SaveTo(Writer writer) {
+        public void SaveTo(BufferWriter writer) {
             writer.Write(TopicName);
             writer.Write(Details.Length);
             foreach (var item in Details) {
@@ -46,7 +47,7 @@ namespace Chuye.Kafka.Protocol.Implement {
         public Int64 Time { get; set; }
         public Int32 MaxNumberOfOffsets { get; set; }
 
-        public void SaveTo(Writer writer) {
+        public void SaveTo(BufferWriter writer) {
             writer.Write(Partition);
             writer.Write(Time);
             writer.Write(MaxNumberOfOffsets);

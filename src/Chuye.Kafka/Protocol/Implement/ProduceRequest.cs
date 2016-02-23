@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Chuye.Kafka.Serialization;
 
 namespace Chuye.Kafka.Protocol.Implement {
 //ProduceRequest => RequiredAcks Timeout [TopicName [Partition MessageSetSize MessageSet]]
@@ -19,7 +20,7 @@ namespace Chuye.Kafka.Protocol.Implement {
         public Int32 Timeout { get; set; }
         public ProduceRequestTopicPartition[] TopicPartitions { get; set; }
 
-        protected override void SerializeContent(Writer writer) {
+        protected override void SerializeContent(BufferWriter writer) {
             writer.Write((Int16)RequiredAcks);
             writer.Write(Timeout);
             writer.Write(TopicPartitions.Length);
@@ -71,7 +72,7 @@ namespace Chuye.Kafka.Protocol.Implement {
         public String TopicName { get; set; }
         public ProduceRequestTopicDetail[] Details { get; set; }
 
-        public void SaveTo(Writer writer) {
+        public void SaveTo(BufferWriter writer) {
             writer.Write(TopicName);
             writer.Write(Details.Length);
             foreach (var item in Details) {
@@ -85,7 +86,7 @@ namespace Chuye.Kafka.Protocol.Implement {
         //public Int32 MessageSetSize { get; set; }
         public MessageSetCollection MessageSets { get; set; }
 
-        public void SaveTo(Writer writer) {
+        public void SaveTo(BufferWriter writer) {
             writer.Write(Partition);
             //writer.Write(MessageSetSize);
             using (writer.PrepareLength()) {

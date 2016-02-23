@@ -10,14 +10,18 @@ namespace Chuye.Kafka {
     public struct Option {
         public String Host;
         public Int32 Port;
+        public Int32 MaxBufferPoolSize;
+        public Int32 MaxBufferSize;
+        public Int32 BlockBufferSize;
 
         public static Option LoadDefault() {
             var config = ConfigurationManager.AppSettings.Get("kafka:server");
             if (config != null) {
-                const String pattern = "^(?<ip>(?:\\d{1,3}\\.){3}\\d{1,3})\\:(?<port>\\d+)$";
+                //const String pattern = "^(?<ip>(?:\\d{1,3}\\.){3}\\d{1,3})\\:(?<port>\\d+)$";
+                const String pattern = @"^(?<host>[^\:]+)\:(?<port>\d+)$";
                 var match = Regex.Match(config, pattern);
                 if (match.Success) {
-                    var host = match.Groups["ip"].Value;
+                    var host = match.Groups["host"].Value;
                     var port = Int32.Parse(match.Groups["port"].Value);
                     return new Option(host, port);
                 }
@@ -30,9 +34,12 @@ namespace Chuye.Kafka {
             }
         }
 
-        public Option(String host, Int32 port) {
+        public Option(String host, Int32 port, Int32 maxBufferPoolSize = 1024 * 1024, Int32 maxBufferSize = 4096, Int32 blockBufferSize = 4096) {
             Host = host;
             Port = port;
+            MaxBufferPoolSize = maxBufferPoolSize;
+            MaxBufferSize = maxBufferSize;
+            BlockBufferSize = blockBufferSize;
         }
     }
 }

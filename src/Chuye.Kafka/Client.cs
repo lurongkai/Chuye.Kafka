@@ -1,91 +1,164 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Configuration;
 using System.Diagnostics;
-using System.Linq;
 using System.Net.Sockets;
-using System.Text;
-using System.Text.RegularExpressions;
+using System.ServiceModel.Channels;
+using System.Threading;
 using System.Threading.Tasks;
 using Chuye.Kafka.Protocol;
 using Chuye.Kafka.Protocol.Implement;
-using Chuye.Kafka.Protocol.Implement.Management;
+using Chuye.Kafka.Serialization;
 
 namespace Chuye.Kafka {
-    public class Client {
-        private static readonly Type[] _responseTyps;
-        private readonly String _host;
-        private readonly Int32 _port;
-
-        static Client() {
-            _responseTyps = new Type[17];
-            _responseTyps[(Int32)ApiKey.ProduceRequest]          = typeof(ProduceResponse);
-            _responseTyps[(Int32)ApiKey.FetchRequest]            = typeof(FetchResponse);
-            _responseTyps[(Int32)ApiKey.OffsetRequest]           = typeof(OffsetResponse);
-            _responseTyps[(Int32)ApiKey.MetadataRequest]         = typeof(MetadataResponse);
-            _responseTyps[(Int32)ApiKey.OffsetCommitRequest]     = typeof(OffsetCommitResponse);
-            _responseTyps[(Int32)ApiKey.OffsetFetchRequest]      = typeof(OffsetFetchResponse);
-            _responseTyps[(Int32)ApiKey.GroupCoordinatorRequest] = typeof(GroupCoordinatorResponse);
-            _responseTyps[(Int32)ApiKey.JoinGroupRequest]        = typeof(JoinGroupResponse);
-            _responseTyps[(Int32)ApiKey.HeartbeatRequest]        = typeof(HeartbeatResponse);
-            _responseTyps[(Int32)ApiKey.LeaveGroupRequest]       = typeof(LeaveGroupResponse);
-            _responseTyps[(Int32)ApiKey.SyncGroupRequest]        = typeof(SyncGroupResponse);
-            _responseTyps[(Int32)ApiKey.DescribeGroupsRequest]   = typeof(DescribeGroupsResponse);
-            _responseTyps[(Int32)ApiKey.ListGroupsRequest]       = typeof(ListGroupsResponse);
-        }
+    public class Client : IDisposable {
+        private readonly Option _option;
+        private readonly BufferManager _bufferManager;
+        private readonly SocketManager _socketManager;
+        private readonly Int32 _blockBufferSize;
 
         public Client(Option option) {
-            _host = option.Host;
-            _port = option.Port;
+            _option = option;
+            _blockBufferSize = option.BlockBufferSize;
+            _bufferManager = BufferManager.CreateBufferManager(option.MaxBufferSize, option.MaxBufferSize);
+            _socketManager = new SocketManager();
         }
 
-        public Client(String host, Int32 port) {
-            _host = host;
-            _port = port;
-        }
-
-        public Response Send(Request request) {
-            var bufferProvider = new BufferProvider();
-            using (var socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
-            using (var requestBuffer = bufferProvider.Borrow())
-            using (var responseBuffer = bufferProvider.Borrow()) {
-                var requestBytes = request.Serialize(requestBuffer.Buffer);
-                socket.Connect(_host, _port);
-                socket.Send(requestBytes.Array, requestBytes.Offset, SocketFlags.None);
+        public IResponseDispatcher Send(Request request) {
+            Socket socket = null;
+            Byte[] requestBytes = null;
+            try {
+                socket = _socketManager.Obtain();
+                requestBytes = _bufferManager.TakeBuffer(_blockBufferSize);
+                var requestBytesCount = request.Serialize(new ArraySegment<Byte>(requestBytes));
+                if (!socket.Connected) {
+                    socket.Connect(_option.Host, _option.Port);
+                }
+                socket.Send(requestBytes, 0, requestBytesCount, SocketFlags.None);
+                var produceRequest = request as ProduceRequest;
+                if (produceRequest != null && produceRequest.RequiredAcks == AcknowlegeStrategy.Immediate) {
+                    return null;
+                }
 
                 const Int32 lengthBytesSize = 4;
-                var beginningBytesReceived = socket.Receive(responseBuffer.Buffer, lengthBytesSize, SocketFlags.None);
+                var responseBytes = _bufferManager.TakeBuffer(_blockBufferSize);
+                var beginningBytesReceived = socket.Receive(responseBytes, 0, lengthBytesSize, SocketFlags.None);
                 if (beginningBytesReceived < lengthBytesSize) {
                     throw new SocketException((Int32)SocketError.SocketError);
                 }
-                var expectedBodyBytesSize = new Reader(responseBuffer.Buffer).ReadInt32();
+                var expectedBodyReader = new BufferReader(responseBytes, 0);
+                var expectedBodyBytesSize = expectedBodyReader.ReadInt32();
                 Debug.WriteLine("Expected body bytes size is {0}", expectedBodyBytesSize);
                 var receivedBodyBytesSize = 0;
 
                 while (receivedBodyBytesSize < expectedBodyBytesSize) {
-                    receivedBodyBytesSize += socket.Receive(
-                        responseBuffer.Buffer,
-                        receivedBodyBytesSize + lengthBytesSize,
+                    receivedBodyBytesSize += socket.Receive(responseBytes,
+                        lengthBytesSize + receivedBodyBytesSize,
                         expectedBodyBytesSize - receivedBodyBytesSize,
-                        SocketFlags.None
-                    );
+                        SocketFlags.None);
                     Debug.WriteLine("Actually body bytes received {0}", receivedBodyBytesSize);
                 }
-                socket.Close();
-
-                var segment = new ArraySegment<Byte>(responseBuffer.Buffer, 0, lengthBytesSize + receivedBodyBytesSize);
-                return ReadFromBuffer(request.ApiKey, segment);
+                return new ReponseDispatcher(request.ApiKey, responseBytes, _bufferManager);
+            }
+            finally {
+                if (socket != null) {
+                    _socketManager.Release(socket);
+                }
+                if (requestBytes != null) {
+                    _bufferManager.ReturnBuffer(requestBytes);
+                }
             }
         }
 
-        private Response ReadFromBuffer(ApiKey apiKey, ArraySegment<Byte> buffer) {
-            var responseTyp = _responseTyps[(Int32)apiKey];
-            if (responseTyp == null) {
-                throw new ArgumentOutOfRangeException("apiKey");
+        public IResponseDispatcher Send_(Request request) {
+            Byte[] requestBytes = null;
+            try {
+                requestBytes = _bufferManager.TakeBuffer(_blockBufferSize);
+                var requestBytesCount = request.Serialize(new ArraySegment<byte>(requestBytes));
+                using (var tcpClient = new TcpClient(_option.Host, _option.Port))
+                using (var stream = tcpClient.GetStream()) {
+                    stream.Write(requestBytes, 0, requestBytesCount);
+                    var produceRequest = request as ProduceRequest;
+                    if (produceRequest != null && produceRequest.RequiredAcks == AcknowlegeStrategy.Immediate) {
+                        return null;
+                    }
+
+                    const Int32 lengthBytesSize = 4;
+                    var responseBytes = _bufferManager.TakeBuffer(_blockBufferSize);
+                    var beginningBytesReceived = stream.Read(responseBytes, 0, lengthBytesSize);
+
+                    if (beginningBytesReceived < lengthBytesSize) {
+                        throw new SocketException((Int32)SocketError.SocketError);
+                    }
+                    var expectedBodyReader = new BufferReader(responseBytes, 0);
+                    var expectedBodyBytesSize = expectedBodyReader.ReadInt32();
+                    Debug.WriteLine("Expected body bytes size is {0}", expectedBodyBytesSize);
+                    var receivedBodyBytesSize = 0;
+
+                    while (receivedBodyBytesSize < expectedBodyBytesSize) {
+                        receivedBodyBytesSize += stream.Read(responseBytes,
+                            lengthBytesSize + receivedBodyBytesSize,
+                            expectedBodyBytesSize - receivedBodyBytesSize);
+                        Debug.WriteLine("Actually body bytes received {0}", receivedBodyBytesSize);
+                    }
+
+                    //var responseBytes = new Byte[lengthBytesSize + receivedBodyBytesSize];
+                    //Array.Copy(responseBuffer.Segment.Array, responseBuffer.Segment.Offset, responseBytes, 0, responseBytes.Length);
+                    return new ReponseDispatcher(request.ApiKey, responseBytes, _bufferManager);
+                }
             }
-            var response = (Response)Activator.CreateInstance(responseTyp);
-            response.Read(buffer);
-            return response;
+            finally {
+                if (requestBytes != null) {
+                    _bufferManager.ReturnBuffer(requestBytes);
+                }
+            }
+        }
+
+        public async Task<IResponseDispatcher> SendAsync(Request request) {
+            Byte[] requestBytes = null;
+            try {
+                requestBytes = _bufferManager.TakeBuffer(_blockBufferSize);
+                var requestBytesCount = request.Serialize(new ArraySegment<byte>(requestBytes));
+                using (var tcpClient = new TcpClient(_option.Host, _option.Port))
+                using (var stream = tcpClient.GetStream()) {
+                    await stream.WriteAsync(requestBytes, 0, requestBytesCount);
+                    var produceRequest = request as ProduceRequest;
+                    if (produceRequest != null && produceRequest.RequiredAcks == AcknowlegeStrategy.Immediate) {
+                        stream.Close();
+                        return null;
+                    }
+
+                    const Int32 lengthBytesSize = 4;
+                    var responseBytes = _bufferManager.TakeBuffer(_blockBufferSize);
+                    var beginningBytesReceived = await stream.ReadAsync(responseBytes, 0, lengthBytesSize);
+                    if (beginningBytesReceived < lengthBytesSize) {
+                        throw new SocketException((Int32)SocketError.SocketError);
+                    }
+                    var expectedBodyReader = new BufferReader(responseBytes, 0);
+                    var expectedBodyBytesSize = expectedBodyReader.ReadInt32();
+                    Debug.WriteLine("Expected body bytes size is {0}", expectedBodyBytesSize);
+                    var receivedBodyBytesSize = 0;
+
+                    while (receivedBodyBytesSize < expectedBodyBytesSize) {
+                        receivedBodyBytesSize += await stream.ReadAsync(responseBytes,
+                            lengthBytesSize + receivedBodyBytesSize,
+                            expectedBodyBytesSize - receivedBodyBytesSize);
+                        Debug.WriteLine("Actually body bytes received {0}", receivedBodyBytesSize);
+                    }
+
+                    //var responseBytes = new Byte[lengthBytesSize + receivedBodyBytesSize];
+                    //Array.Copy(responseBuffer.Segment.Array, responseBuffer.Segment.Offset, responseBytes, 0, responseBytes.Length);
+                    return new ReponseDispatcher(request.ApiKey, responseBytes, _bufferManager);
+                }
+            }
+            finally {
+                if (requestBytes != null) {
+                    _bufferManager.ReturnBuffer(requestBytes);
+                }
+            }
+        }
+
+        public void Dispose() {
+            _socketManager.Dispose();
+            _bufferManager.Clear();
         }
     }
 }

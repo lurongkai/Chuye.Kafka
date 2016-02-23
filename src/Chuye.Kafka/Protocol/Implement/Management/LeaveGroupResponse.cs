@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Chuye.Kafka.Serialization;
 
 namespace Chuye.Kafka.Protocol.Implement.Management {
     //LeaveGroupResponse => ErrorCode
@@ -16,7 +17,7 @@ namespace Chuye.Kafka.Protocol.Implement.Management {
         //* GROUP_AUTHORIZATION_FAILED (30)
         public ErrorCode ErrorCode { get; set; }
 
-        protected override void DeserializeContent(Reader reader) {
+        protected override void DeserializeContent(BufferReader reader) {
             ErrorCode = (ErrorCode)reader.ReadInt16();
         }
     }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Chuye.Kafka.Serialization;
 
 namespace Chuye.Kafka.Protocol.Implement.Management {
     //GroupCoordinatorRequest => GroupId
@@ -11,10 +12,10 @@ namespace Chuye.Kafka.Protocol.Implement.Management {
         public String GroupId { get; set; }
 
         public GroupCoordinatorRequest()
-            : base(Protocol.ApiKey.GroupCoordinatorRequest) {
+            : base(ApiKey.GroupCoordinatorRequest) {
         }
 
-        protected override void SerializeContent(Writer writer) {
+        protected override void SerializeContent(BufferWriter writer) {
             writer.Write(GroupId);
         }
     }

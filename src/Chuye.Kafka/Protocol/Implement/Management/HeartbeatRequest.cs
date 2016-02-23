@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Chuye.Kafka.Serialization;
 
 namespace Chuye.Kafka.Protocol.Implement.Management {
     //HeartbeatRequest => GroupId GenerationId MemberId
@@ -18,7 +19,7 @@ namespace Chuye.Kafka.Protocol.Implement.Management {
             : base(ApiKey.HeartbeatRequest) {
         }
 
-        protected override void SerializeContent(Writer writer) {
+        protected override void SerializeContent(BufferWriter writer) {
             throw new NotImplementedException();
         }
     }

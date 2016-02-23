@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Chuye.Kafka.Serialization;
 
 namespace Chuye.Kafka.Protocol.Implement {
     //v0, v1 and v2:
@@ -13,7 +14,7 @@ namespace Chuye.Kafka.Protocol.Implement {
     public class OffsetCommitResponse : Response {
         public OffsetCommitResponseTopicPartition[] TopicPartitions { get; set; }
 
-        protected override void DeserializeContent(Reader reader) {
+        protected override void DeserializeContent(BufferReader reader) {
             var size = reader.ReadInt32();
             if (size == -1) {
                 return;
@@ -31,7 +32,7 @@ namespace Chuye.Kafka.Protocol.Implement {
 
         public OffsetCommitResponseTopicPartitionDetail[] Details { get; set; }
 
-        public void FetchFrom(Reader reader) {
+        public void FetchFrom(BufferReader reader) {
             TopicName = reader.ReadString();
             var size = reader.ReadInt32();
             if (size == -1) {
@@ -50,7 +51,7 @@ namespace Chuye.Kafka.Protocol.Implement {
         public Int32 Partition { get; set; }
         public ErrorCode ErrorCode { get; set; }
 
-        public void FetchFrom(Reader reader) {
+        public void FetchFrom(BufferReader reader) {
             Partition = reader.ReadInt32();
             ErrorCode = (ErrorCode)reader.ReadInt16();
         }

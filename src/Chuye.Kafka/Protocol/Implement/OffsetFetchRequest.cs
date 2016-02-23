@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Chuye.Kafka.Serialization;
 
 namespace Chuye.Kafka.Protocol.Implement {
     //OffsetFetchRequest => ConsumerGroup [TopicName [Partition]]
@@ -14,10 +15,10 @@ namespace Chuye.Kafka.Protocol.Implement {
         public OffsetFetchRequestTopicPartition[] TopicPartitions { get; set; }
 
         public OffsetFetchRequest()
-            : base(Protocol.ApiKey.OffsetFetchRequest) {
+            : base(ApiKey.OffsetFetchRequest) {
         }
 
-        protected override void SerializeContent(Writer writer) {
+        protected override void SerializeContent(BufferWriter writer) {
             writer.Write(ConsumerGroup);
             writer.Write(TopicPartitions.Length);
             foreach (var item in TopicPartitions) {
@@ -30,7 +31,7 @@ namespace Chuye.Kafka.Protocol.Implement {
         public String TopicName { get; set; }
         public Int32[] Partitions { get; set; }
 
-        public void SaveTo(Writer writer) {
+        public void SaveTo(BufferWriter writer) {
             writer.Write(TopicName);
             writer.Write(Partitions.Length);
             foreach (var item in Partitions) {

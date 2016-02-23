@@ -10,7 +10,7 @@ namespace Chuye.Kafka {
         public String Message;
 
         public KeyedMessage(String key, String message) {
-            Key = key;
+            Key     = key;
             Message = message;
         }
 
@@ -18,7 +18,7 @@ namespace Chuye.Kafka {
             if (Key == null) {
                 return Message;
             }
-            return String.Format("{{\"Key\":\"{0}\", \"Message\":\"{1}\"}}", Key, Message);
+            return String.Format("#{0}# {1}", Key, Message);
         }
 
         public Boolean Equals(KeyedMessage other) {
@@ -48,7 +48,5 @@ namespace Chuye.Kafka {
         public static implicit operator KeyValuePair<String, String>(KeyedMessage message) {
             return new KeyValuePair<String, String>(message.Key, message.Message);
         }
-
-
     }
 }

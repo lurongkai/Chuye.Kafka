@@ -3,18 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Chuye.Kafka.Serialization;
 using Chuye.Kafka.Utils;
 
 namespace Chuye.Kafka.Protocol {
-
-    interface IWriteable {
-        void SaveTo(Writer writer);
-    }
-
-    interface IReadable {
-        void FetchFrom(Reader reader);
-    }
-
     //RequestOrResponse => Size (RequestMessage | ResponseMessage)
     //Size => int32
     //-------------------------------------------------------------------------
@@ -38,21 +30,24 @@ namespace Chuye.Kafka.Protocol {
             ApiKey = apiKey;
             ApiVersion = 0;
             CorrelationId = System.Threading.Interlocked.Increment(ref CurrentCorrelationId);
-            ClientId = "Kafka-Net";
+            ClientId = "chuye.kafka";
         }
 
         protected void Verify() {
             DataAnnotationHelper.ThrowIfInvalid(this);
         }
 
-        public virtual ArraySegment<Byte> Serialize(Byte[] bytes) {
+        public Int32 Serialize(ArraySegment<Byte> buffer) {
+            return Serialize(buffer.Array, buffer.Offset);
+        }
+        public Int32 Serialize(Byte[] bytes, Int32 offset) {
             Verify();
-            var writer = new Writer(bytes);
+            var writer = new BufferWriter(bytes, offset);
             SaveTo(writer);
-            return writer.Bytes;
+            return writer.Count;
         }
 
-        public virtual void SaveTo(Writer writer) {
+        public virtual void SaveTo(BufferWriter writer) {
             using (writer.PrepareLength()) {
                 writer.Write((Int16)ApiKey);
                 writer.Write(ApiVersion);
@@ -62,7 +57,7 @@ namespace Chuye.Kafka.Protocol {
             }
         }
 
-        protected abstract void SerializeContent(Writer writer);
+        protected abstract void SerializeContent(BufferWriter writer);
     }
 }
 

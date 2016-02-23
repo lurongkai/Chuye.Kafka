@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Chuye.Kafka.Serialization;
 
 namespace Chuye.Kafka.Protocol.Implement {
     //OffsetResponse => [TopicName [PartitionOffsets]]
@@ -11,18 +12,18 @@ namespace Chuye.Kafka.Protocol.Implement {
     //  ErrorCode => int16
     //  Offset => int64
     public class OffsetResponse : Response {
-        public OffsetResponseTopicPartition[] Partitions { get; set; }
+        public OffsetResponseTopicPartition[] TopicPartitions { get; set; }
 
-        protected override void DeserializeContent(Reader reader) {
+        protected override void DeserializeContent(BufferReader reader) {
             var size = reader.ReadInt32();
             if (size == -1) {
                 return;
             }
 
-            Partitions = new OffsetResponseTopicPartition[size];
+            TopicPartitions = new OffsetResponseTopicPartition[size];
             for (int i = 0; i < size; i++) {
-                Partitions[i] = new OffsetResponseTopicPartition();
-                Partitions[i].FetchFrom(reader);
+                TopicPartitions[i] = new OffsetResponseTopicPartition();
+                TopicPartitions[i].FetchFrom(reader);
             }
         }
     }
@@ -31,7 +32,7 @@ namespace Chuye.Kafka.Protocol.Implement {
         public String TopicName { get; set; }
         public PartitionOffset[] Offsets { get; set; }
 
-        public void FetchFrom(Reader reader) {
+        public void FetchFrom(BufferReader reader) {
             TopicName = reader.ReadString();
             var size = reader.ReadInt32();
             if (size == -1) {
@@ -55,7 +56,7 @@ namespace Chuye.Kafka.Protocol.Implement {
         public ErrorCode ErrorCode { get; set; }
         public Int64[] Offsets { get; set; }
 
-        public void FetchFrom(Reader reader) {
+        public void FetchFrom(BufferReader reader) {
             Partition = reader.ReadInt32();
             ErrorCode = (ErrorCode)reader.ReadInt16();
             var size = reader.ReadInt32();

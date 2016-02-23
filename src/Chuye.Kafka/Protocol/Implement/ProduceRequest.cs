@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Chuye.Kafka.Serialization;
 
 namespace Chuye.Kafka.Protocol.Implement {
 //ProduceRequest => RequiredAcks Timeout [TopicName [Partition MessageSetSize MessageSet]]
@@ -12,20 +13,58 @@ namespace Chuye.Kafka.Protocol.Implement {
 //  MessageSetSize => int32
     public class ProduceRequest : Request {
         public ProduceRequest()
-            : base(Protocol.ApiKey.ProduceRequest) {
+            : base(ApiKey.ProduceRequest) {
         }
 
-        public Int16 RequiredAcks { get; set; }
+        public AcknowlegeStrategy RequiredAcks { get; set; }
         public Int32 Timeout { get; set; }
         public ProduceRequestTopicPartition[] TopicPartitions { get; set; }
 
-        protected override void SerializeContent(Writer writer) {
-            writer.Write(RequiredAcks);
+        protected override void SerializeContent(BufferWriter writer) {
+            writer.Write((Int16)RequiredAcks);
             writer.Write(Timeout);
             writer.Write(TopicPartitions.Length);
             foreach (var item in TopicPartitions) {
                 item.SaveTo(writer);
             }
+        }
+
+        public static ProduceRequest Create(String topicName, IList<KeyedMessage> messages, AcknowlegeStrategy strategy) {
+            if (String.IsNullOrWhiteSpace(topicName)) {
+                throw new ArgumentOutOfRangeException("topicName");
+            }
+            if (messages == null || messages.Count == 0) {
+                throw new ArgumentOutOfRangeException("messages");
+            }
+
+            var request = new ProduceRequest();
+            request.RequiredAcks = strategy; //important
+            request.Timeout = 10;
+            request.TopicPartitions = new ProduceRequestTopicPartition[1];
+            var topicPartition
+                = request.TopicPartitions[0]
+                = new ProduceRequestTopicPartition();
+            topicPartition.TopicName = topicName;
+            topicPartition.Details = new ProduceRequestTopicDetail[1];
+            var topicDetail
+                = topicPartition.Details[0]
+                = new ProduceRequestTopicDetail();
+            topicDetail.Partition = 0; //important, accounding to server config
+            topicDetail.MessageSets = new MessageSetCollection();
+            topicDetail.MessageSets.Items = new MessageSet[messages.Count];
+            for (int i = 0; i < messages.Count; i++) {
+                var messageSet
+                    = topicDetail.MessageSets.Items[i]
+                    = new MessageSet();
+                messageSet.Message = new Message();
+                if (messages[i].Key != null) {
+                    messageSet.Message.Key = Encoding.UTF8.GetBytes(messages[i].Key);
+                }
+                if (messages[i].Message != null) {
+                    messageSet.Message.Value = Encoding.UTF8.GetBytes(messages[i].Message);
+                }
+            }
+            return request;
         }
     }
 
@@ -33,7 +72,7 @@ namespace Chuye.Kafka.Protocol.Implement {
         public String TopicName { get; set; }
         public ProduceRequestTopicDetail[] Details { get; set; }
 
-        public void SaveTo(Writer writer) {
+        public void SaveTo(BufferWriter writer) {
             writer.Write(TopicName);
             writer.Write(Details.Length);
             foreach (var item in Details) {
@@ -47,7 +86,7 @@ namespace Chuye.Kafka.Protocol.Implement {
         //public Int32 MessageSetSize { get; set; }
         public MessageSetCollection MessageSets { get; set; }
 
-        public void SaveTo(Writer writer) {
+        public void SaveTo(BufferWriter writer) {
             writer.Write(Partition);
             //writer.Write(MessageSetSize);
             using (writer.PrepareLength()) {

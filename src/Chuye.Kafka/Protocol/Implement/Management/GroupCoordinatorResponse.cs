@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Chuye.Kafka.Serialization;
 
 namespace Chuye.Kafka.Protocol.Implement.Management {
     //GroupCoordinatorResponse => ErrorCode CoordinatorId CoordinatorHost CoordinatorPort
@@ -20,7 +21,7 @@ namespace Chuye.Kafka.Protocol.Implement.Management {
         public String CoordinatorHost { get; set; }
         public Int32 CoordinatorPort { get; set; }
 
-        protected override void DeserializeContent(Reader reader) {
+        protected override void DeserializeContent(BufferReader reader) {
             ErrorCode = (ErrorCode)reader.ReadInt16();
             CoordinatorId = reader.ReadInt32();
             CoordinatorHost = reader.ReadString();

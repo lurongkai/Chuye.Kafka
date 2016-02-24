@@ -8,10 +8,10 @@ using Chuye.Kafka.Serialization;
 namespace Chuye.Kafka.Protocol.Implement {
     //TopicMetadataRequest => [TopicName]
     //  TopicName => string
-    public class MetadataRequest : Request {
+    public class TopicMetadataRequest : Request {
         public String[] TopicNames { get; set; }
 
-        public MetadataRequest()
+        public TopicMetadataRequest()
             : base(ApiKey.MetadataRequest) {
         }
 

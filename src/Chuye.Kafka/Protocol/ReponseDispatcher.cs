@@ -23,7 +23,7 @@ namespace Chuye.Kafka.Protocol {
             _responseTyps[(Int32)ApiKey.ProduceRequest]          = typeof(ProduceResponse);
             _responseTyps[(Int32)ApiKey.FetchRequest]            = typeof(FetchResponse);
             _responseTyps[(Int32)ApiKey.OffsetRequest]           = typeof(OffsetResponse);
-            _responseTyps[(Int32)ApiKey.MetadataRequest]         = typeof(MetadataResponse);
+            _responseTyps[(Int32)ApiKey.MetadataRequest]         = typeof(TopicMetadataResponse);
             _responseTyps[(Int32)ApiKey.OffsetCommitRequest]     = typeof(OffsetCommitResponse);
             _responseTyps[(Int32)ApiKey.OffsetFetchRequest]      = typeof(OffsetFetchResponse);
             _responseTyps[(Int32)ApiKey.GroupCoordinatorRequest] = typeof(GroupCoordinatorResponse);

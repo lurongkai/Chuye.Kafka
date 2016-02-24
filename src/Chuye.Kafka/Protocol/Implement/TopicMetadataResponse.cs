@@ -7,7 +7,7 @@ using Chuye.Kafka.Serialization;
 
 namespace Chuye.Kafka.Protocol.Implement {
     //MetadataResponse => [Broker][TopicMetadata]
-    public class MetadataResponse : Response {
+    public class TopicMetadataResponse : Response {
         public Broker[] Brokers { get; set; }
         public TopicMetadata[] TopicMetadatas { get; set; }
 
@@ -21,8 +21,8 @@ namespace Chuye.Kafka.Protocol.Implement {
                 }
             }
             var topicMetadataSize = reader.ReadInt32();
-            if(topicMetadataSize!=-1)
-            TopicMetadatas = new TopicMetadata[topicMetadataSize];
+            if (topicMetadataSize != -1)
+                TopicMetadatas = new TopicMetadata[topicMetadataSize];
             {
                 for (int i = 0; i < TopicMetadatas.Length; i++) {
                     TopicMetadatas[i] = new TopicMetadata();
@@ -78,14 +78,14 @@ namespace Chuye.Kafka.Protocol.Implement {
     //  Replicas => [int32]
     //  Isr => [int32]  
     public class PartitionMetadata : IReadable {
-        public Int16 PartitionErrorCode { get; set; }
+        public ErrorCode PartitionErrorCode { get; set; }
         public Int32 PartitionId { get; set; }
         public Int32 Leader { get; set; }
         public Int32[] Replicas { get; set; }
         public Int32[] Isr { get; set; }
 
         public void FetchFrom(BufferReader reader) {
-            PartitionErrorCode = reader.ReadInt16();
+            PartitionErrorCode = (ErrorCode)reader.ReadInt16();
             PartitionId = reader.ReadInt32();
             Leader = reader.ReadInt32();
             Replicas = new Int32[reader.ReadInt32()];

@@ -77,8 +77,8 @@
     <Compile Include="Protocol\Implement\Management\SyncGroupRequest.cs" />
     <Compile Include="Protocol\Implement\Management\JoinGroupRequest.cs" />
     <Compile Include="Protocol\Implement\Management\GroupCoordinatorRequest.cs" />
-    <Compile Include="Protocol\Implement\MetadataRequest.cs" />
-    <Compile Include="Protocol\Implement\MetadataResponse.cs" />
+    <Compile Include="Protocol\Implement\TopicMetadataRequest.cs" />
+    <Compile Include="Protocol\Implement\TopicMetadataResponse.cs" />
     <Compile Include="Protocol\Implement\OffsetCommitRequest.cs" />
     <Compile Include="Protocol\Implement\OffsetFetchRequest.cs" />
     <Compile Include="Protocol\Implement\OffsetResponse.cs" />

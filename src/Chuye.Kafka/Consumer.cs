@@ -15,11 +15,11 @@ namespace Chuye.Kafka {
             _client = new Client(option);
         }
 
-        public MetadataResponse Metadata(String topicName) {
-            var request = new MetadataRequest();
+        public TopicMetadataResponse TopicMetadata(String topicName) {
+            var request = new TopicMetadataRequest();
             request.TopicNames = new[] { topicName };
             var attemptLimit = 5;
-            var response = (MetadataResponse)Invoke(request);
+            var response = (TopicMetadataResponse)Invoke(request);
             while (attemptLimit-- > 0) {
                 var metadata = response.TopicMetadatas[0];
                 if (metadata.TopicErrorCode == ErrorCode.NoError) {
@@ -29,7 +29,7 @@ namespace Chuye.Kafka {
                     if (attemptLimit <= 0) {
                         throw new KafkaException(metadata.TopicErrorCode);
                     }
-                    response = (MetadataResponse)Invoke(request);
+                    response = (TopicMetadataResponse)Invoke(request);
                 }
                 else {
                     throw new KafkaException(metadata.TopicErrorCode);
@@ -38,7 +38,7 @@ namespace Chuye.Kafka {
             return response;
         }
 
-        private Response Invoke(MetadataRequest request) {
+        private Response Invoke(TopicMetadataRequest request) {
             using (var responseDispatcher = _client.Send(request)) {
                 return responseDispatcher.ParseResult();
             }

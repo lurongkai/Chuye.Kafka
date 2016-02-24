@@ -18,14 +18,29 @@ namespace Chuye.Kafka {
         public MetadataResponse Metadata(String topicName) {
             var request = new MetadataRequest();
             request.TopicNames = new[] { topicName };
-
-            using (var responseDispatcher = _client.Send(request)) {
-                var response = (MetadataResponse)responseDispatcher.ParseResult();
-                var errors = response.TopicMetadatas.Where(x => x.TopicErrorCode != ErrorCode.NoError);
-                if (errors.Any()) {
-                    throw new KafkaException(errors.First().TopicErrorCode);
+            var attemptLimit = 5;
+            var response = (MetadataResponse)Invoke(request);
+            while (attemptLimit-- > 0) {
+                var metadata = response.TopicMetadatas[0];
+                if (metadata.TopicErrorCode == ErrorCode.NoError) {
+                    break;
                 }
-                return response;
+                if (metadata.TopicErrorCode == ErrorCode.LeaderNotAvailable) {
+                    if (attemptLimit <= 0) {
+                        throw new KafkaException(metadata.TopicErrorCode);
+                    }
+                    response = (MetadataResponse)Invoke(request);
+                }
+                else {
+                    throw new KafkaException(metadata.TopicErrorCode);
+                }
+            }
+            return response;
+        }
+
+        private Response Invoke(MetadataRequest request) {
+            using (var responseDispatcher = _client.Send(request)) {
+                return responseDispatcher.ParseResult();
             }
         }
 
@@ -111,27 +126,9 @@ namespace Chuye.Kafka {
             }
         }
 
-        public IEnumerable<OffsetKeyedMessage> FetchAll(String topicName, Int64 fetchOffset) {
-            //var lastOffset = 0;
-            //return Fetch(topicName, fetchOffset).TakeWhile(r => r.Offset == lastOffset);
-            //var nextOffset = lastOffset;
-            //...
-
-            var messages = Fetch(topicName, fetchOffset);
-            while (messages.Any()) {
-                foreach (var msg in messages) {
-                    //if (msg.Offset == 0) ;
-                    fetchOffset = msg.Offset;
-                    yield return msg;
-                }
-                fetchOffset++;
-                messages = Fetch(topicName, fetchOffset);
-            }
-        }
-
         public IEnumerable<OffsetKeyedMessage> Fetch(String topicName, Int64 fetchOffset) {
             var request = new FetchRequest();
-            request.ReplicaId = -1;            
+            request.ReplicaId = -1;
             request.MaxWaitTime = 100;
             request.MinBytes = 4096;
             request.TopicPartitions = new[] {
@@ -156,6 +153,18 @@ namespace Chuye.Kafka {
                     var message = msg.Message.Value != null ? Encoding.UTF8.GetString(msg.Message.Value) : null;
                     yield return new OffsetKeyedMessage(msg.Offset, key, message);
                 }
+            }
+        }
+
+        public IEnumerable<OffsetKeyedMessage> FetchAll(String topicName, Int64 fetchOffset) {
+            var messages = Fetch(topicName, fetchOffset);
+            while (messages.Any()) {
+                foreach (var msg in messages) {
+                    fetchOffset = msg.Offset;
+                    yield return msg;
+                }
+                fetchOffset++;
+                messages = Fetch(topicName, fetchOffset);
             }
         }
 

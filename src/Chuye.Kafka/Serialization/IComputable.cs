@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Chuye.Kafka.Serialization {
-    public interface IComputable : IDisposable {
+    interface IComputable : IDisposable {
         Int32 Output { get; }
     }
 }

@@ -47,6 +47,7 @@ namespace Chuye.Kafka {
             var consumer = new Consumer(option);
             var metadata = consumer.Metadata(DemoTopic);
             var offset = consumer.Offset(DemoTopic);
+            //var offset = consumer.Offset(DemoTopic, (Int64)OffsetTime.Latest);
             var messages = consumer.FetchAll(DemoTopic, 0);
 
             foreach (var msg in messages) {

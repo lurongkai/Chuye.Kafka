@@ -29,31 +29,35 @@ namespace Chuye.Kafka {
             }
         }
 
-        public Int64 Offset(String topicName) {
+        public Int64 Offset(String topicName, OffsetTimeOption offsetTime = OffsetTimeOption.Latest) {
             var request = new OffsetRequest();
             request.ReplicaId = 0;
-            request.TopicPartitions = new OffsetsRequestTopicPartition[1];
-            var partition
-                = request.TopicPartitions[0]
-                = new OffsetsRequestTopicPartition();
-            partition.TopicName = topicName;
-            partition.Details = new OffsetsRequestTopicPartitionDetail[1];
-            var detail
-                = partition.Details[0]
-                = new OffsetsRequestTopicPartitionDetail();
-            detail.Partition = 0;
-            detail.Time = -2;
-            detail.MaxNumberOfOffsets = 1;
+            request.TopicPartitions = new[] {
+                 new OffsetsRequestTopicPartition {
+                     TopicName = topicName,
+                     Details = new [] {
+                         new OffsetsRequestTopicPartitionDetail() {
+                             Partition = 0,
+                             Time = (Int64)offsetTime,
+                             MaxNumberOfOffsets = 1
+                         }
+                     }
+                 }
+            };
 
             using (var responseDispatcher = _client.Send(request)) {
                 var response = (OffsetResponse)responseDispatcher.ParseResult();
-                var errors = response.TopicPartitions.SelectMany(x => x.Offsets)
+                var errors = response.TopicPartitions.SelectMany(x => x.PartitionOffsets)
                     .Where(x => x.ErrorCode != x.ErrorCode);
                 if (errors.Any()) {
                     throw new KafkaException(errors.First().ErrorCode);
                 }
 
-                return response.TopicPartitions[0].Offsets[0].Offsets[0];
+                var partitionOffsets = response.TopicPartitions[0].PartitionOffsets[0];
+                if (partitionOffsets.Offsets.Length == 0) {
+                    return -1;
+                }
+                return partitionOffsets.Offsets[0];
             }
         }
 
@@ -61,12 +65,17 @@ namespace Chuye.Kafka {
             var request = new OffsetCommitRequestV0();
             request.ConsumerGroup = consumerGroup;
             request.TopicPartitions = new OffsetCommitRequestTopicPartitionV0[1];
-            var partition = request.TopicPartitions[0] = new OffsetCommitRequestTopicPartitionV0();
-            partition.TopicName = topicName;
-            partition.Details = new OffsetCommitRequestTopicPartitionDetailV0[1];
-            var detail = partition.Details[0] = new OffsetCommitRequestTopicPartitionDetailV0();
-            detail.Partition = 0;
-            detail.Offset = offset;
+            request.TopicPartitions = new[] {
+                new OffsetCommitRequestTopicPartitionV0 {
+                    TopicName = topicName,
+                    Details = new [] {
+                        new OffsetCommitRequestTopicPartitionDetailV0 {
+                            Partition = 0,
+                            Offset = offset
+                        }
+                    }
+                }
+            };
 
             using (var responseDispatcher = _client.Send(request)) {
                 var offsetCommitResponse = (OffsetCommitResponse)responseDispatcher.ParseResult();
@@ -82,10 +91,12 @@ namespace Chuye.Kafka {
         public Int64 OffsetFetch(String topicName, String consumerGroup) {
             var request = new OffsetFetchRequest();
             request.ConsumerGroup = consumerGroup;
-            request.TopicPartitions = new OffsetFetchRequestTopicPartition[1];
-            var partition = request.TopicPartitions[0] = new OffsetFetchRequestTopicPartition();
-            partition.TopicName = topicName;
-            partition.Partitions = new[] { 0 };
+            request.TopicPartitions = new[] {
+                new OffsetFetchRequestTopicPartition {
+                    TopicName = topicName,
+                    Partitions = new[] { 0 }
+                }
+            };
 
             using (var responseDispatcher = _client.Send(request)) {
                 var offsetFetchResponse = (OffsetFetchResponse)responseDispatcher.ParseResult();
@@ -120,23 +131,20 @@ namespace Chuye.Kafka {
 
         public IEnumerable<OffsetKeyedMessage> Fetch(String topicName, Int64 fetchOffset) {
             var request = new FetchRequest();
-            request.ReplicaId = -1;
-            //e.g. setting MaxWaitTime to 100 ms and setting MinBytes to 64k 
-            // would allow the server to wait up to 100ms  
-            // to try to accumulate 30k of data before responding
+            request.ReplicaId = -1;            
             request.MaxWaitTime = 100;
             request.MinBytes = 4096;
-            request.TopicPartitions = new TopicPartition[1];
-            var topicPartition
-                = request.TopicPartitions[0]
-                = new TopicPartition();
-            topicPartition.TopicName = topicName;
-            topicPartition.FetchOffsetDetails = new FetchOffsetDetail[1];
-            var fetchOffsetDetail
-                = topicPartition.FetchOffsetDetails[0]
-                = new FetchOffsetDetail();
-            fetchOffsetDetail.FetchOffset = fetchOffset;
-            fetchOffsetDetail.MaxBytes = 60 * 1024;
+            request.TopicPartitions = new[] {
+                new TopicPartition {
+                    TopicName = topicName,
+                    FetchOffsetDetails=new [] {
+                        new FetchOffsetDetail {
+                            FetchOffset = fetchOffset,
+                            MaxBytes = 60 * 1024
+                        }
+                    }
+                }
+            };
 
             using (var responseDispatcher = _client.Send(request)) {
                 var response = (FetchResponse)responseDispatcher.ParseResult();
@@ -154,5 +162,9 @@ namespace Chuye.Kafka {
         public void Dispose() {
             _client.Dispose();
         }
+    }
+
+    public enum OffsetTimeOption : long {
+        Earliest = -2, Latest = -1
     }
 }

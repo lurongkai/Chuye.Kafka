@@ -30,7 +30,7 @@ namespace Chuye.Kafka.Protocol.Implement {
 
     public class OffsetResponseTopicPartition : IReadable {
         public String TopicName { get; set; }
-        public PartitionOffset[] Offsets { get; set; }
+        public PartitionOffset[] PartitionOffsets { get; set; }
 
         public void FetchFrom(BufferReader reader) {
             TopicName = reader.ReadString();
@@ -39,10 +39,10 @@ namespace Chuye.Kafka.Protocol.Implement {
                 return;
             }
 
-            Offsets = new PartitionOffset[size];
+            PartitionOffsets = new PartitionOffset[size];
             for (int i = 0; i < size; i++) {
-                Offsets[i] = new PartitionOffset();
-                Offsets[i].FetchFrom(reader);
+                PartitionOffsets[i] = new PartitionOffset();
+                PartitionOffsets[i].FetchFrom(reader);
             }
         }
     }

@@ -16,6 +16,11 @@ namespace Chuye.Kafka.Protocol.Implement {
     //  MaxBytes => int32
     public class FetchRequest : Request {
         public Int32 ReplicaId { get; set; }
+        /// <summary>
+        /// e.g. setting MaxWaitTime to 100 ms and setting MinBytes to 64k 
+        ///   would allow the server to wait up to 100ms  
+        ///   to try to accumulate 30k of data before responding
+        /// </summary>
         public Int32 MaxWaitTime { get; set; }
         public Int32 MinBytes { get; set; }
         public TopicPartition[] TopicPartitions { get; set; }

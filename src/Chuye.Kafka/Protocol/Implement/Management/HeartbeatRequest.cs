@@ -20,7 +20,9 @@ namespace Chuye.Kafka.Protocol.Implement.Management {
         }
 
         protected override void SerializeContent(BufferWriter writer) {
-            throw new NotImplementedException();
+            writer.Write(GroupId);
+            writer.Write(GenerationId);
+            writer.Write(MemberId);
         }
     }
 }

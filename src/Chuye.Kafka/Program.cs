@@ -27,7 +27,6 @@ namespace Chuye.Kafka {
             }
         }
 
-        #region high level api demo
         static void Client_TopicMetadata_Demo() {
             var option = Option.LoadDefault();
             using (var connection = new Connection(option)) {
@@ -87,61 +86,5 @@ namespace Chuye.Kafka {
                     count, stopwatch.Elapsed, count / stopwatch.Elapsed.TotalSeconds);
             }
         }
-
-        #endregion
-
-        #region low level api demo
-        private static void ProceedListGroups_DescribeGroups() {
-            var listGroupsRequest = new ListGroupsRequest();
-            var listGroupsResponse = (ListGroupsResponse)_connection.Invoke(listGroupsRequest);
-            var describeGroupsRequest = new DescribeGroupsRequest();
-            describeGroupsRequest.GroupId = new[] { "xx" };
-            var describeGroupsResponse = (DescribeGroupsResponse)_connection.Invoke(describeGroupsRequest);
-
-        }
-
-        static void ProceedGroupCoordinator() {
-            var request = new GroupCoordinatorRequest();
-            //request.GroupId = String.Empty;
-            request.GroupId = "100";
-            var response = (GroupCoordinatorResponse)_connection.Invoke(request);
-        }
-
-        static void ProceedOffsetCommit() {
-            var request = (OffsetCommitRequestV2)OffsetCommitRequest.Create(2);
-            request.ApiVersion = 2;
-            request.ConsumerGroup = "cg1";
-            //request.ConsumerGroupGenerationId = 1;
-            request.ConsumerId = "c1";
-            request.RetentionTime = 0;
-            request.TopicPartitions = new OffsetCommitRequestTopicPartitionV0[1];
-            var partition
-                = request.TopicPartitions[0]
-                = new OffsetCommitRequestTopicPartitionV0();
-            partition.TopicName = DemoTopic;
-            partition.Details = new OffsetCommitRequestTopicPartitionDetailV0[1];
-            var detail
-                = partition.Details[0]
-                = new OffsetCommitRequestTopicPartitionDetailV0();
-            detail.Partition = 0;
-            detail.Offset = 1;
-
-            var response = (OffsetCommitResponse)_connection.Invoke(request);
-        }
-
-        static void ProceedOffsetFetch() {
-            var request = new OffsetFetchRequest();
-            request.ConsumerGroup = "default";
-            request.TopicPartitions = new OffsetFetchRequestTopicPartition[1];
-            var topicPartition
-                = request.TopicPartitions[0]
-                = new OffsetFetchRequestTopicPartition();
-            topicPartition.TopicName = DemoTopic;
-            topicPartition.Partitions = new[] { 0 };
-
-            var response = (OffsetFetchResponse)_connection.Invoke(request);
-        }
-
-        #endregion
     }
 }

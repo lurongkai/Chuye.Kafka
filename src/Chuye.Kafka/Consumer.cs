@@ -9,6 +9,9 @@ using Chuye.Kafka.Protocol.Implement;
 
 namespace Chuye.Kafka {
     public class Consumer : IDisposable {
+        private const Int32 DefaultPartition = 0;
+        private const Int32 DefaultReplicaId = -1;
+
         private readonly Connection _connection;
 
         public Consumer(Connection connection) {
@@ -17,14 +20,14 @@ namespace Chuye.Kafka {
 
         public Int64 Offset(String topicName, OffsetTimeOption offsetTime = OffsetTimeOption.Latest) {
             var request = new OffsetRequest();
-            request.ReplicaId = 0;
+            request.ReplicaId       = DefaultReplicaId;
             request.TopicPartitions = new[] {
                  new OffsetsRequestTopicPartition {
                      TopicName = topicName,
-                     Details = new [] {
+                     Details   = new [] {
                          new OffsetsRequestTopicPartitionDetail() {
-                             Partition = 0,
-                             Time = (Int64)offsetTime,
+                             Partition          = DefaultPartition,
+                             Time               = (Int64)offsetTime,
                              MaxNumberOfOffsets = 1
                          }
                      }
@@ -47,15 +50,15 @@ namespace Chuye.Kafka {
 
         public void OffsetCommit(String topicName, String consumerGroup, Int64 offset) {
             var request = new OffsetCommitRequestV0();
-            request.ConsumerGroup = consumerGroup;
+            request.ConsumerGroup   = consumerGroup;
             request.TopicPartitions = new OffsetCommitRequestTopicPartitionV0[1];
             request.TopicPartitions = new[] {
                 new OffsetCommitRequestTopicPartitionV0 {
                     TopicName = topicName,
-                    Details = new [] {
+                    Details   = new [] {
                         new OffsetCommitRequestTopicPartitionDetailV0 {
-                            Partition = 0,
-                            Offset = offset
+                            Partition = DefaultPartition,
+                            Offset    = offset
                         }
                     }
                 }
@@ -72,11 +75,11 @@ namespace Chuye.Kafka {
 
         public Int64 OffsetFetch(String topicName, String consumerGroup) {
             var request = new OffsetFetchRequest();
-            request.ConsumerGroup = consumerGroup;
+            request.ConsumerGroup   = consumerGroup;
             request.TopicPartitions = new[] {
                 new OffsetFetchRequestTopicPartition {
-                    TopicName = topicName,
-                    Partitions = new[] { 0 }
+                    TopicName  = topicName,
+                    Partitions = new[] { DefaultPartition }
                 }
             };
 
@@ -93,16 +96,17 @@ namespace Chuye.Kafka {
 
         public IEnumerable<OffsetKeyedMessage> Fetch(String topicName, Int64 fetchOffset) {
             var request = new FetchRequest();
-            request.ReplicaId = -1;
-            request.MaxWaitTime = 100;
-            request.MinBytes = 4096;
+            request.ReplicaId       = DefaultReplicaId;
+            request.MaxWaitTime     = 100;
+            request.MinBytes        = 4096;
             request.TopicPartitions = new[] {
                 new TopicPartition {
-                    TopicName = topicName,
-                    FetchOffsetDetails=new [] {
+                    TopicName          = topicName,
+                    FetchOffsetDetails = new [] {
                         new FetchOffsetDetail {
+                            Partition   = 0,
                             FetchOffset = fetchOffset,
-                            MaxBytes = 60 * 1024
+                            MaxBytes    = 60 * 1024
                         }
                     }
                 }

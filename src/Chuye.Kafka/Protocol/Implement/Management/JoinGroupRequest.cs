@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,6 +16,7 @@ namespace Chuye.Kafka.Protocol.Implement.Management {
     //    ProtocolName => string
     //    ProtocolMetadata => bytes
     public class JoinGroupRequest : Request {
+        [Required]
         public String GroupId { get; set; }
         public Int32 SessionTimeout { get; set; }
         public String MemberId { get; set; }

@@ -8,7 +8,8 @@ using Chuye.Kafka.Protocol.Implement.Management;
 
 namespace Chuye.Kafka {
     class Program {
-        const String DemoTopic = "demo-topic";
+        const String DemoTopic = "demoTopic";
+        const String DemoGroup = "demoConsumerGroup";
         static Connection _connection;
 
         static void Main(string[] args) {
@@ -16,10 +17,11 @@ namespace Chuye.Kafka {
             //Debug.Listeners.Add(new TextWriterTraceListener(Console.Out));
             _connection = new Connection(Option.LoadDefault());
 
-            Client_TopicMetadata_Demo();
-            Consumer_Offset_Fetch_Demo();
-            Producer_Post_Demo();
-            Producer_Post_Immediate_Benchmark();
+            //Client_TopicMetadata_Demo();
+            //Consumer_Offset_Fetch_Demo();
+            Consumer_Group_Operate();
+            //Producer_Post_Demo();
+            //Producer_Post_Immediate_Benchmark();
 
             if (Debugger.IsAttached) {
                 Console.WriteLine("Press <Enter> to exit");
@@ -84,6 +86,20 @@ namespace Chuye.Kafka {
                 stopwatch.Stop();
                 Console.WriteLine("Handle {0} messages in {1}, {2} /sec.",
                     count, stopwatch.Elapsed, count / stopwatch.Elapsed.TotalSeconds);
+            }
+        }
+
+        static void Consumer_Group_Operate() {
+            var option = Option.LoadDefault();
+            using (var connection = new Connection(option)) {
+                var consumer = new Consumer(connection);
+                consumer.GroupCoordinator(DemoGroup);
+                consumer.JoinGroup(DemoGroup);
+                consumer.SyncGroup(new Byte[0]);
+                consumer.Heartbeat();
+                consumer.ListGroups();
+                consumer.DescribeGroups();
+                consumer.LeaveGroup();
             }
         }
     }

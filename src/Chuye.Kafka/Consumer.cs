@@ -6,13 +6,31 @@ using System.Text;
 using System.Threading.Tasks;
 using Chuye.Kafka.Protocol;
 using Chuye.Kafka.Protocol.Implement;
+using Chuye.Kafka.Protocol.Implement.Management;
 
 namespace Chuye.Kafka {
     public class Consumer : IDisposable {
         private const Int32 DefaultPartition = 0;
         private const Int32 DefaultReplicaId = -1;
-
+        private const String DefaultProtocolType = "";
+        private const String DefaultProtocolName = "";
         private readonly Connection _connection;
+
+        private String _groupId;
+        private String _memberId;
+        private Int32 _generationId;
+
+        public String GroupId {
+            get { return _groupId; }
+        }
+
+        public String MemberId {
+            get { return _memberId; }
+        }
+
+        public Int32 GenerationId {
+            get { return _generationId; }
+        }
 
         public Consumer(Connection connection) {
             _connection = connection;
@@ -20,7 +38,7 @@ namespace Chuye.Kafka {
 
         public Int64 Offset(String topicName, OffsetTimeOption offsetTime = OffsetTimeOption.Latest) {
             var request = new OffsetRequest();
-            request.ReplicaId       = DefaultReplicaId;
+            request.ReplicaId = DefaultReplicaId;
             request.TopicPartitions = new[] {
                  new OffsetsRequestTopicPartition {
                      TopicName = topicName,
@@ -50,7 +68,7 @@ namespace Chuye.Kafka {
 
         public void OffsetCommit(String topicName, String consumerGroup, Int64 offset) {
             var request = new OffsetCommitRequestV0();
-            request.ConsumerGroup   = consumerGroup;
+            request.ConsumerGroup = consumerGroup;
             request.TopicPartitions = new OffsetCommitRequestTopicPartitionV0[1];
             request.TopicPartitions = new[] {
                 new OffsetCommitRequestTopicPartitionV0 {
@@ -75,7 +93,7 @@ namespace Chuye.Kafka {
 
         public Int64 OffsetFetch(String topicName, String consumerGroup) {
             var request = new OffsetFetchRequest();
-            request.ConsumerGroup   = consumerGroup;
+            request.ConsumerGroup = consumerGroup;
             request.TopicPartitions = new[] {
                 new OffsetFetchRequestTopicPartition {
                     TopicName  = topicName,
@@ -96,9 +114,9 @@ namespace Chuye.Kafka {
 
         public IEnumerable<OffsetKeyedMessage> Fetch(String topicName, Int64 fetchOffset) {
             var request = new FetchRequest();
-            request.ReplicaId       = DefaultReplicaId;
-            request.MaxWaitTime     = 100;
-            request.MinBytes        = 4096;
+            request.ReplicaId = DefaultReplicaId;
+            request.MaxWaitTime = 100;
+            request.MinBytes = 4096;
             request.TopicPartitions = new[] {
                 new TopicPartition {
                     TopicName          = topicName,
@@ -132,6 +150,97 @@ namespace Chuye.Kafka {
                 }
                 fetchOffset++;
                 messages = Fetch(topicName, fetchOffset);
+            }
+        }
+
+        public void GroupCoordinator(String groupId) {
+            var request = new GroupCoordinatorRequest();
+            request.GroupId = groupId;
+            var response = (GroupCoordinatorResponse)_connection.Invoke(request);
+            if (response.ErrorCode != ErrorCode.NoError) {
+                throw new KafkaException(response.ErrorCode);
+            }
+            //todo:
+        }
+
+        public void JoinGroup(String groupId) {
+            var request            = new JoinGroupRequest();
+            request.GroupId        = groupId;
+            request.MemberId       = String.Empty;
+            request.SessionTimeout = 30000;
+            request.ProtocolType   = DefaultProtocolType;
+            request.GroupProtocols = new[] {
+                new JoinGroupRequestGroupProtocol{
+                    ProtocolName     = DefaultProtocolName,
+                    ProtocolMetadata = new Byte[0],
+                }
+            };
+
+            var response = (JoinGroupResponse)_connection.Invoke(request);
+            if (response.ErrorCode != ErrorCode.NoError) {
+                throw new KafkaException(response.ErrorCode);
+            }
+            _groupId = groupId;
+            _generationId = response.GenerationId;
+            _memberId = response.MemberId;
+        }
+
+        public IList<ListGroupsResponseGroup> ListGroups() {
+            var request = new ListGroupsRequest();
+            var response = (ListGroupsResponse)_connection.Invoke(request);
+            if (response.ErrorCode != ErrorCode.NoError) {
+                throw new KafkaException(response.ErrorCode);
+            }
+            return response.Groups;
+        }
+
+        public DescribeGroupsResponse DescribeGroups(String groupId = null) {
+            var request = new DescribeGroupsRequest();
+            request.GroupId = new[] { groupId ?? _groupId };
+            var response = (DescribeGroupsResponse)_connection.Invoke(request);
+            var errros = response.Details.Where(x => x.ErrorCode != ErrorCode.NoError);
+            if (errros.Any()) {
+                throw new KafkaException(errros.First().ErrorCode);
+            }
+            return response;
+        }
+
+        public Byte[] SyncGroup(Byte[] memberAssignment) {
+            var request = new SyncGroupRequest();
+            request.GroupId = _groupId;
+            request.GenerationId = _generationId;
+            request.MemberId = _memberId;
+            request.GroupAssignments = new[] {
+                new SyncGroupRequestGroupAssignment {
+                    MemberId         = _memberId,
+                    MemberAssignment = memberAssignment,
+                }
+            };
+            var response = (SyncGroupResponse)_connection.Invoke(request);
+            if (response.ErrorCode != ErrorCode.NoError) {
+                throw new KafkaException(response.ErrorCode);
+            }
+            return response.MemberAssignment;
+        }
+
+        public void Heartbeat() {
+            var request = new HeartbeatRequest();
+            request.GroupId = _groupId;
+            request.GenerationId = _generationId;
+            request.MemberId = _memberId;
+            var response = (HeartbeatResponse)_connection.Invoke(request);
+            if (response.ErrorCode != ErrorCode.NoError) {
+                throw new KafkaException(response.ErrorCode);
+            }
+        }
+
+        public void LeaveGroup() {
+            var request = new LeaveGroupRequest();
+            request.GroupId = _groupId;
+            request.MemberId = _memberId;
+            var response = (LeaveGroupResponse)_connection.Invoke(request);
+            if (response.ErrorCode != ErrorCode.NoError) {
+                throw new KafkaException(response.ErrorCode);
             }
         }
 

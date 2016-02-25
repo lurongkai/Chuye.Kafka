@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,6 +10,7 @@ namespace Chuye.Kafka.Protocol.Implement.Management {
     //GroupCoordinatorRequest => GroupId
     //  GroupId => string
     public class GroupCoordinatorRequest : Request {
+        [Required]
         public String GroupId { get; set; }
 
         public GroupCoordinatorRequest()

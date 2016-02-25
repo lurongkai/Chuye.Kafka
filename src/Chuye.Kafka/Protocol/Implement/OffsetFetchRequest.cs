@@ -14,8 +14,11 @@ namespace Chuye.Kafka.Protocol.Implement {
         public String ConsumerGroup { get; set; }
         public OffsetFetchRequestTopicPartition[] TopicPartitions { get; set; }
 
+        /// <summary>
+        /// ApiVersion 1 and above fetch from Kafka, version 0 fetches from ZooKeeper
+        /// </summary>
         public OffsetFetchRequest()
-            : base(ApiKey.OffsetFetchRequest) {
+            : base(ApiKey.OffsetFetchRequest) {            
         }
 
         protected override void SerializeContent(BufferWriter writer) {

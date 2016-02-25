@@ -7,18 +7,30 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Chuye.Kafka.Tests {
     [TestClass]
     public class PerformanceTest {
+        const Int32 count = 1000;
+
         [TestMethod]
-        public void SendMessag_Async() {
+        public void SendMessag_Immediate() {
             Debug.Listeners.Clear();
-            const String targetTopic = "async-topic";
+            const String targetTopic = "immediateTopic";
             var option = Option.LoadDefault();
-            var producer = new Producer(option);
+            var connection = new Connection(option);
+            var producer = new Producer(connection);
             producer.Strategy = AcknowlegeStrategy.Immediate;
-            
-            const Int32 count = 10000;
+
             var stopwatch = Stopwatch.StartNew();
-            for (int i = 0; i < count; i++) {
+            {
+                var message = String.Concat(Guid.NewGuid().ToString("n"), "#", 0);
+                //Console.WriteLine("Sending... {0}", message);
+                producer.Post(targetTopic, message);
+            }
+            for (int i = 1; i < count - 1; i++) {
                 var message = String.Concat(Guid.NewGuid().ToString("n"), "#", i);
+                //Console.WriteLine("Sending... {0}", message);
+                producer.Post(targetTopic, message);
+            }
+            {
+                var message = String.Concat(Guid.NewGuid().ToString("n"), "#", count);
                 //Console.WriteLine("Sending... {0}", message);
                 producer.Post(targetTopic, message);
             }
@@ -30,41 +42,18 @@ namespace Chuye.Kafka.Tests {
         [TestMethod]
         public void SendMessag_Written() {
             Debug.Listeners.Clear();
-            const String targetTopic = "performace-topic";
+            const String targetTopic = "writtenTopic";
             var option = Option.LoadDefault();
-
-            var producer = new Producer(option);
+            var connection = new Connection(option);
+            var producer = new Producer(connection);
             producer.Strategy = AcknowlegeStrategy.Written;
-            const Int32 count = 100;
+
             var stopwatch = Stopwatch.StartNew();
             for (int i = 0; i < count; i++) {
                 var message = String.Concat(Guid.NewGuid().ToString("n"), "#", i);
                 //Console.WriteLine("Sending... {0}", message);
                 producer.Post(targetTopic, message);
             }
-            stopwatch.Stop();
-            Console.WriteLine("Handle {0} messages in {1}, {2} /sec.",
-                count, stopwatch.Elapsed, count / stopwatch.Elapsed.TotalSeconds);
-        }
-
-        [TestMethod]
-        public void SendMessag_Written_Aysnc() {
-            Debug.Listeners.Clear();
-            const String targetTopic = "performace-topic";
-            var option = Option.LoadDefault();
-            
-            var producer = new Producer(option);
-            producer.Strategy = AcknowlegeStrategy.Written;
-            const Int32 count = 10000;
-            var stopwatch = Stopwatch.StartNew();
-            var tasks = new Task[count];
-            for (int i = 0; i < count; i++) {
-                var message = String.Concat(Guid.NewGuid().ToString("n"), "#", i);
-                //Console.WriteLine("Sending... {0}", message);
-                var j = i;
-                tasks[j] = producer.PostAsync(targetTopic, message);
-            }
-            Task.WaitAll(tasks);
             stopwatch.Stop();
             Console.WriteLine("Handle {0} messages in {1}, {2} /sec.",
                 count, stopwatch.Elapsed, count / stopwatch.Elapsed.TotalSeconds);

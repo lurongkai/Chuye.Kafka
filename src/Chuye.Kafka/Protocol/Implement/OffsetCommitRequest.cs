@@ -7,6 +7,9 @@ using Chuye.Kafka.Serialization;
 
 namespace Chuye.Kafka.Protocol.Implement {
 
+    /// <summary>
+    /// ApiVersion 1 and above fetch from Kafka, version 0 fetches from ZooKeeper
+    /// </summary>
     public abstract class OffsetCommitRequest : Request {
         protected OffsetCommitRequest()
             : base(ApiKey.OffsetCommitRequest) {

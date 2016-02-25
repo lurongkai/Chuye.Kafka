@@ -9,107 +9,120 @@ using Chuye.Kafka.Protocol.Implement;
 
 namespace Chuye.Kafka {
     public class Consumer : IDisposable {
-        private readonly Client _client;
+        private readonly Connection _connection;
 
-        public Consumer(Option option) {
-            _client = new Client(option);
+        public Consumer(Connection connection) {
+            _connection = connection;
         }
 
-        public MetadataResponse Metadata(String topicName) {
-            var request = new MetadataRequest();
-            request.TopicNames = new[] { topicName };
-
-            using (var responseDispatcher = _client.Send(request)) {
-                var response = (MetadataResponse)responseDispatcher.ParseResult();
-                var errors = response.TopicMetadatas.Where(x => x.TopicErrorCode != ErrorCode.NoError);
-                if (errors.Any()) {
-                    throw new KafkaException(errors.First().TopicErrorCode);
-                }
-                return response;
-            }
-        }
-
-        public Int64 Offset(String topicName) {
+        public Int64 Offset(String topicName, OffsetTimeOption offsetTime = OffsetTimeOption.Latest) {
             var request = new OffsetRequest();
             request.ReplicaId = 0;
-            request.TopicPartitions = new OffsetsRequestTopicPartition[1];
-            var partition
-                = request.TopicPartitions[0]
-                = new OffsetsRequestTopicPartition();
-            partition.TopicName = topicName;
-            partition.Details = new OffsetsRequestTopicPartitionDetail[1];
-            var detail
-                = partition.Details[0]
-                = new OffsetsRequestTopicPartitionDetail();
-            detail.Partition = 0;
-            detail.Time = -2;
-            detail.MaxNumberOfOffsets = 1;
+            request.TopicPartitions = new[] {
+                 new OffsetsRequestTopicPartition {
+                     TopicName = topicName,
+                     Details = new [] {
+                         new OffsetsRequestTopicPartitionDetail() {
+                             Partition = 0,
+                             Time = (Int64)offsetTime,
+                             MaxNumberOfOffsets = 1
+                         }
+                     }
+                 }
+            };
 
-            using (var responseDispatcher = _client.Send(request)) {
-                var response = (OffsetResponse)responseDispatcher.ParseResult();
-                var errors = response.TopicPartitions.SelectMany(x => x.Offsets)
-                    .Where(x => x.ErrorCode != x.ErrorCode);
-                if (errors.Any()) {
-                    throw new KafkaException(errors.First().ErrorCode);
-                }
-
-                return response.TopicPartitions[0].Offsets[0].Offsets[0];
+            var response = (OffsetResponse)_connection.Invoke(request);
+            var errors = response.TopicPartitions.SelectMany(x => x.PartitionOffsets)
+                .Where(x => x.ErrorCode != x.ErrorCode);
+            if (errors.Any()) {
+                throw new KafkaException(errors.First().ErrorCode);
             }
+
+            var partitionOffsets = response.TopicPartitions[0].PartitionOffsets[0];
+            if (partitionOffsets.Offsets.Length == 0) {
+                return -1;
+            }
+            return partitionOffsets.Offsets[0];
         }
 
         public void OffsetCommit(String topicName, String consumerGroup, Int64 offset) {
             var request = new OffsetCommitRequestV0();
             request.ConsumerGroup = consumerGroup;
             request.TopicPartitions = new OffsetCommitRequestTopicPartitionV0[1];
-            var partition = request.TopicPartitions[0] = new OffsetCommitRequestTopicPartitionV0();
-            partition.TopicName = topicName;
-            partition.Details = new OffsetCommitRequestTopicPartitionDetailV0[1];
-            var detail = partition.Details[0] = new OffsetCommitRequestTopicPartitionDetailV0();
-            detail.Partition = 0;
-            detail.Offset = offset;
-
-            using (var responseDispatcher = _client.Send(request)) {
-                var offsetCommitResponse = (OffsetCommitResponse)responseDispatcher.ParseResult();
-                var errros = offsetCommitResponse.TopicPartitions
-                    .SelectMany(r => r.Details)
-                    .Where(x => x.ErrorCode != ErrorCode.NoError);
-                if (errros.Any()) {
-                    throw new KafkaException(errros.First().ErrorCode);
+            request.TopicPartitions = new[] {
+                new OffsetCommitRequestTopicPartitionV0 {
+                    TopicName = topicName,
+                    Details = new [] {
+                        new OffsetCommitRequestTopicPartitionDetailV0 {
+                            Partition = 0,
+                            Offset = offset
+                        }
+                    }
                 }
+            };
+
+            var response = (OffsetCommitResponse)_connection.Invoke(request);
+            var errros = response.TopicPartitions
+                .SelectMany(r => r.Details)
+                .Where(x => x.ErrorCode != ErrorCode.NoError);
+            if (errros.Any()) {
+                throw new KafkaException(errros.First().ErrorCode);
             }
         }
 
         public Int64 OffsetFetch(String topicName, String consumerGroup) {
             var request = new OffsetFetchRequest();
             request.ConsumerGroup = consumerGroup;
-            request.TopicPartitions = new OffsetFetchRequestTopicPartition[1];
-            var partition = request.TopicPartitions[0] = new OffsetFetchRequestTopicPartition();
-            partition.TopicName = topicName;
-            partition.Partitions = new[] { 0 };
-
-            using (var responseDispatcher = _client.Send(request)) {
-                var offsetFetchResponse = (OffsetFetchResponse)responseDispatcher.ParseResult();
-                var errros = offsetFetchResponse.TopicPartitions
-                    .SelectMany(r => r.Details)
-                    .Where(x => x.ErrorCode != ErrorCode.NoError);
-                if (errros.Any()) {
-                    throw new KafkaException(errros.First().ErrorCode);
+            request.TopicPartitions = new[] {
+                new OffsetFetchRequestTopicPartition {
+                    TopicName = topicName,
+                    Partitions = new[] { 0 }
                 }
+            };
 
-                return offsetFetchResponse.TopicPartitions[0].Details[0].Offset;
+            var response = (OffsetFetchResponse)_connection.Invoke(request);
+            var errros = response.TopicPartitions
+                .SelectMany(r => r.Details)
+                .Where(x => x.ErrorCode != ErrorCode.NoError);
+            if (errros.Any()) {
+                throw new KafkaException(errros.First().ErrorCode);
+            }
+
+            return response.TopicPartitions[0].Details[0].Offset;
+        }
+
+        public IEnumerable<OffsetKeyedMessage> Fetch(String topicName, Int64 fetchOffset) {
+            var request = new FetchRequest();
+            request.ReplicaId = -1;
+            request.MaxWaitTime = 100;
+            request.MinBytes = 4096;
+            request.TopicPartitions = new[] {
+                new TopicPartition {
+                    TopicName = topicName,
+                    FetchOffsetDetails=new [] {
+                        new FetchOffsetDetail {
+                            FetchOffset = fetchOffset,
+                            MaxBytes = 60 * 1024
+                        }
+                    }
+                }
+            };
+
+            var response = (FetchResponse)_connection.Invoke(request);
+            var messages = response.TopicPartitions.SelectMany(x => x.MessageBodys)
+                .SelectMany(x => x.MessageSet.Items);
+
+            foreach (var msg in messages) {
+                var key = msg.Message.Key != null ? Encoding.UTF8.GetString(msg.Message.Key) : null;
+                var message = msg.Message.Value != null ? Encoding.UTF8.GetString(msg.Message.Value) : null;
+                yield return new OffsetKeyedMessage(msg.Offset, key, message);
             }
         }
 
         public IEnumerable<OffsetKeyedMessage> FetchAll(String topicName, Int64 fetchOffset) {
-            //var lastOffset = 0;
-            //return Fetch(topicName, fetchOffset).TakeWhile(r => r.Offset == lastOffset);
-            //var nextOffset = lastOffset;
-            //...
-
             var messages = Fetch(topicName, fetchOffset);
             while (messages.Any()) {
                 foreach (var msg in messages) {
-                    //if (msg.Offset == 0) ;
                     fetchOffset = msg.Offset;
                     yield return msg;
                 }
@@ -118,41 +131,12 @@ namespace Chuye.Kafka {
             }
         }
 
-        public IEnumerable<OffsetKeyedMessage> Fetch(String topicName, Int64 fetchOffset) {
-            var request = new FetchRequest();
-            request.ReplicaId = -1;
-            //e.g. setting MaxWaitTime to 100 ms and setting MinBytes to 64k 
-            // would allow the server to wait up to 100ms  
-            // to try to accumulate 30k of data before responding
-            request.MaxWaitTime = 100;
-            request.MinBytes = 4096;
-            request.TopicPartitions = new TopicPartition[1];
-            var topicPartition
-                = request.TopicPartitions[0]
-                = new TopicPartition();
-            topicPartition.TopicName = topicName;
-            topicPartition.FetchOffsetDetails = new FetchOffsetDetail[1];
-            var fetchOffsetDetail
-                = topicPartition.FetchOffsetDetails[0]
-                = new FetchOffsetDetail();
-            fetchOffsetDetail.FetchOffset = fetchOffset;
-            fetchOffsetDetail.MaxBytes = 60 * 1024;
-
-            using (var responseDispatcher = _client.Send(request)) {
-                var response = (FetchResponse)responseDispatcher.ParseResult();
-                var messages = response.TopicPartitions.SelectMany(x => x.MessageBodys)
-                    .SelectMany(x => x.MessageSet.Items);
-
-                foreach (var msg in messages) {
-                    var key = msg.Message.Key != null ? Encoding.UTF8.GetString(msg.Message.Key) : null;
-                    var message = msg.Message.Value != null ? Encoding.UTF8.GetString(msg.Message.Value) : null;
-                    yield return new OffsetKeyedMessage(msg.Offset, key, message);
-                }
-            }
-        }
-
         public void Dispose() {
-            _client.Dispose();
+            _connection.Dispose();
         }
+    }
+
+    public enum OffsetTimeOption : long {
+        Earliest = -2, Latest = -1
     }
 }

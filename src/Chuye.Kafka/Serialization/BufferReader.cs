@@ -5,7 +5,6 @@ using System.Linq;
 using System.Text;
 
 namespace Chuye.Kafka.Serialization {
-
     public class BufferReader {
         private Int32 _offset;
         private readonly Byte[] _bytes;
@@ -62,18 +61,6 @@ namespace Chuye.Kafka.Serialization {
             return BitConverter.ToInt32(buffer, 0);
         }
 
-        //public Int32[] ReadInt32Array() {
-        //    var length = ReadInt32();
-        //    if (length == -1) {
-        //        return null;
-        //    }
-        //    var array = new Int32[length];
-        //    for (int i = 0; i < length; i++) {
-        //        array[i] = ReadInt32();
-        //    }
-        //    return array;
-        //}
-
         public Int64 ReadInt64() {
             var buffer = new Byte[8];
             buffer[7] = _bytes[_offset++];
@@ -86,19 +73,7 @@ namespace Chuye.Kafka.Serialization {
             buffer[0] = _bytes[_offset++];
             return BitConverter.ToInt64(buffer, 0);
         }
-
-        //public Int64[] ReadInt64Array() {
-        //    var length = ReadInt32();
-        //    if (length == -1) {
-        //        return null;
-        //    }
-        //    var array = new Int64[length];
-        //    for (int i = 0; i < length; i++) {
-        //        array[i] = ReadInt64();
-        //    }
-        //    return array;
-        //}
-
+        
         public String ReadString() {
             var length = ReadInt16();
             if (length == -1) {

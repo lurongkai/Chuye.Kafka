@@ -8,10 +8,14 @@ using Chuye.Kafka.Serialization;
 namespace Chuye.Kafka.Protocol.Implement {
     //TopicMetadataRequest => [TopicName]
     //  TopicName => string
-    public class MetadataRequest : Request {
+    /// <summary>
+    /// If "auto.create.topics.enable" is set in the broker configuration, 
+    ///   a topic metadata request will create the topic with the default replication factor and number of partitions. 
+    /// </summary>
+    public class TopicMetadataRequest : Request {
         public String[] TopicNames { get; set; }
 
-        public MetadataRequest()
+        public TopicMetadataRequest()
             : base(ApiKey.MetadataRequest) {
         }
 

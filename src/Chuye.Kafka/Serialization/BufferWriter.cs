@@ -21,13 +21,13 @@ namespace Chuye.Kafka.Serialization {
             get { return _currentOffset - _startOffset; }
         }
 
-        public IComputable PrepareCrc() {
+        internal IComputable PrepareCrc() {
             var previousPosition = _currentOffset;
             Write(0);
             return new CrcWriter(this, previousPosition);
         }
 
-        public IComputable PrepareLength() {
+        internal IComputable PrepareLength() {
             var previousPosition = _currentOffset;
             Write(0);
             return new PositionWriter(this, previousPosition);

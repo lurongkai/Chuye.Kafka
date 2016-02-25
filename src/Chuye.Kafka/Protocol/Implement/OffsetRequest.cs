@@ -44,6 +44,12 @@ namespace Chuye.Kafka.Protocol.Implement {
 
     public class OffsetsRequestTopicPartitionDetail : IWriteable {
         public Int32 Partition { get; set; }
+        /// <summary>
+        /// Used to ask for all messages before a certain time (ms). There are two special values. 
+        ///   Specify -1 to receive the latest offset (i.e. the offset of the next coming message) 
+        ///   and -2 to receive the earliest available offset. 
+        ///   Note that because offsets are pulled in descending order, asking for the earliest offset will always return you a single element.
+        /// </summary>
         public Int64 Time { get; set; }
         public Int32 MaxNumberOfOffsets { get; set; }
 

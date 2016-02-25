@@ -7,7 +7,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Chuye.Kafka.Tests {
     [TestClass]
     public class PerformanceTest {
-        const Int32 count = 100000;
+        const Int32 count = 1000;
 
         [TestMethod]
         public void SendMessag_Immediate() {

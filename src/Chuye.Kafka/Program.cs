@@ -9,10 +9,12 @@ using Chuye.Kafka.Protocol.Implement.Management;
 namespace Chuye.Kafka {
     class Program {
         const String DemoTopic = "demo-topic";
+        static Connection _connection;
 
         static void Main(string[] args) {
             Debug.Listeners.Clear();
             //Debug.Listeners.Add(new TextWriterTraceListener(Console.Out));
+            _connection = new Connection(Option.LoadDefault());
 
             Client_TopicMetadata_Demo();
             Consumer_Offset_Fetch_Demo();
@@ -91,10 +93,10 @@ namespace Chuye.Kafka {
         #region low level api demo
         private static void ProceedListGroups_DescribeGroups() {
             var listGroupsRequest = new ListGroupsRequest();
-            var listGroupsResponse = (ListGroupsResponse)InvokeRequest(listGroupsRequest);
+            var listGroupsResponse = (ListGroupsResponse)_connection.Invoke(listGroupsRequest);
             var describeGroupsRequest = new DescribeGroupsRequest();
             describeGroupsRequest.GroupId = new[] { "xx" };
-            var describeGroupsResponse = (DescribeGroupsResponse)InvokeRequest(describeGroupsRequest);
+            var describeGroupsResponse = (DescribeGroupsResponse)_connection.Invoke(describeGroupsRequest);
 
         }
 
@@ -102,7 +104,7 @@ namespace Chuye.Kafka {
             var request = new GroupCoordinatorRequest();
             //request.GroupId = String.Empty;
             request.GroupId = "100";
-            var response = (GroupCoordinatorResponse)InvokeRequest(request);
+            var response = (GroupCoordinatorResponse)_connection.Invoke(request);
         }
 
         static void ProceedOffsetCommit() {
@@ -124,7 +126,7 @@ namespace Chuye.Kafka {
             detail.Partition = 0;
             detail.Offset = 1;
 
-            var response = (OffsetCommitResponse)InvokeRequest(request);
+            var response = (OffsetCommitResponse)_connection.Invoke(request);
         }
 
         static void ProceedOffsetFetch() {
@@ -137,14 +139,7 @@ namespace Chuye.Kafka {
             topicPartition.TopicName = DemoTopic;
             topicPartition.Partitions = new[] { 0 };
 
-            var response = (OffsetFetchResponse)InvokeRequest(request);
-        }
-
-        static Response InvokeRequest(Request request) {
-            var client = new Connection(Option.LoadDefault());
-            using (var responseDispatcher = client.Send(request)) {
-                return responseDispatcher.ParseResult();
-            }
+            var response = (OffsetFetchResponse)_connection.Invoke(request);
         }
 
         #endregion

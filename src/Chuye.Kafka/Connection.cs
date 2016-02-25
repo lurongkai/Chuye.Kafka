@@ -20,7 +20,6 @@ namespace Chuye.Kafka {
             _socketManager = new SocketManager();
         }
 
-
         public TopicMetadataResponse TopicMetadata(String topicName) {
             var request = new TopicMetadataRequest();
             request.TopicNames = new[] { topicName };
@@ -44,12 +43,6 @@ namespace Chuye.Kafka {
                 }
             }
             return response;
-        }
-
-        public Response Invoke(TopicMetadataRequest request) {
-            using (var responseDispatcher = Send(request)) {
-                return responseDispatcher.ParseResult();
-            }
         }
 
         public IResponseDispatcher Send(Request request) {
@@ -183,6 +176,18 @@ namespace Chuye.Kafka {
                 if (requestBytes != null) {
                     _bufferManager.ReturnBuffer(requestBytes);
                 }
+            }
+        }
+
+        public Response Invoke(Request request) {
+            using (var responseDispatcher = Send(request)) {
+                return responseDispatcher.ParseResult();
+            }
+        }
+
+        public async Task<Response> InvokeAsync(Request request) {
+            using (var responseDispatcher = await SendAsync(request)) {
+                return responseDispatcher.ParseResult();
             }
         }
 

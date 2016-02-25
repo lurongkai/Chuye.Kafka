@@ -5,7 +5,7 @@ using ZooKeeperNet;
 
 namespace Chuye.Kafka.Tests {
     [TestClass]
-    public class UnitTest1 {
+    public class ZooKeeperTest {
         [TestMethod]
         public void ListTopic() {
             Option option = Option.LoadDefault();

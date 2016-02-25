@@ -26,7 +26,7 @@ namespace Chuye.Kafka {
         }
 
         public void Post(String topicName, IList<KeyedMessage> messages) {
-            ProduceRequest request = ProduceRequest.Create(topicName, messages, Strategy);
+            var request = ProduceRequest.Create(topicName, messages, Strategy);
             using (var responseDispatcher = _connection.Send(request)) {
                 if (request.RequiredAcks == AcknowlegeStrategy.Immediate) {
                     return;
@@ -50,8 +50,7 @@ namespace Chuye.Kafka {
         }
 
         public async Task PostAsync(String topicName, IList<KeyedMessage> messages) {
-            ProduceRequest request = ProduceRequest.Create(topicName, messages, Strategy);
-
+            var request = ProduceRequest.Create(topicName, messages, Strategy);
             using (var responseDispatcher = await _connection.SendAsync(request)) {
                 if (request.RequiredAcks == AcknowlegeStrategy.Immediate) {
                     return;

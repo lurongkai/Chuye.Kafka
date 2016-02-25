@@ -14,8 +14,8 @@ namespace Chuye.Kafka.Protocol {
     //-------------------------------------------------------------------------
     //ResponseMessage => MetadataResponse | ProduceResponse | FetchResponse | OffsetResponse | OffsetCommitResponse | OffsetFetchResponse
     public abstract class Response {
-        public Int32 Size;
-        public Int32 CorrelationId;
+        public Int32 Size { get; private set; }
+        public Int32 CorrelationId { get; private set; }
 
         public void Read(ArraySegment<Byte> buffer) {
             Read(buffer.Array, buffer.Offset);

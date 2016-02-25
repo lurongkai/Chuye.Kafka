@@ -28,13 +28,15 @@ namespace Chuye.Kafka.Protocol.Implement.Management {
         public Int32 GenerationId { get; set; }
         public String GroupProtocol { get; set; }
         public String LeaderId { get; set; }
+        public String MemberId { get; set; }
         public JoinGroupResponseMember[] Members { get; set; }
 
         protected override void DeserializeContent(BufferReader reader) {
-            ErrorCode = (ErrorCode)reader.ReadInt16();
-            GenerationId = reader.ReadInt32();
+            ErrorCode     = (ErrorCode)reader.ReadInt16();
+            GenerationId  = reader.ReadInt32();
             GroupProtocol = reader.ReadString();
-            LeaderId = reader.ReadString();
+            LeaderId      = reader.ReadString();
+            MemberId      = reader.ReadString();
 
             var size = reader.ReadInt32();
             if (size != -1) {

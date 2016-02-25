@@ -9,14 +9,12 @@ using Chuye.Kafka.Protocol.Implement;
 
 namespace Chuye.Kafka {
     public class Producer : IDisposable {
-        private readonly Option _option;
-        private readonly Client _client;
+        private readonly Connection _connection;
 
         public AcknowlegeStrategy Strategy { get; set; }
 
-        public Producer(Option option) {
-            _option = option;
-            _client = new Client(option);
+        public Producer(Connection connection) {
+            _connection = connection;
         }
 
         public void Post(String topicName, String key, String message) {
@@ -29,7 +27,7 @@ namespace Chuye.Kafka {
 
         public void Post(String topicName, IList<KeyedMessage> messages) {
             ProduceRequest request = ProduceRequest.Create(topicName, messages, Strategy);
-            using (var responseDispatcher = _client.Send(request)) {
+            using (var responseDispatcher = _connection.Send(request)) {
                 if (request.RequiredAcks == AcknowlegeStrategy.Immediate) {
                     return;
                 }
@@ -54,7 +52,7 @@ namespace Chuye.Kafka {
         public async Task PostAsync(String topicName, IList<KeyedMessage> messages) {
             ProduceRequest request = ProduceRequest.Create(topicName, messages, Strategy);
 
-            using (var responseDispatcher = await _client.SendAsync(request)) {
+            using (var responseDispatcher = await _connection.SendAsync(request)) {
                 if (request.RequiredAcks == AcknowlegeStrategy.Immediate) {
                     return;
                 }
@@ -69,7 +67,7 @@ namespace Chuye.Kafka {
         }
 
         public void Dispose() {
-            _client.Dispose();
+            _connection.Dispose();
         }
     }
 

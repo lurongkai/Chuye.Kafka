@@ -9,41 +9,12 @@ using Chuye.Kafka.Protocol.Implement;
 
 namespace Chuye.Kafka {
     public class Consumer : IDisposable {
-        private readonly Client _client;
+        private readonly Connection _connection;
 
-        public Consumer(Option option) {
-            _client = new Client(option);
+        public Consumer(Connection connection) {
+            _connection = connection;
         }
-
-        public TopicMetadataResponse TopicMetadata(String topicName) {
-            var request = new TopicMetadataRequest();
-            request.TopicNames = new[] { topicName };
-            var attemptLimit = 5;
-            var response = (TopicMetadataResponse)Invoke(request);
-            while (attemptLimit-- > 0) {
-                var metadata = response.TopicMetadatas[0];
-                if (metadata.TopicErrorCode == ErrorCode.NoError) {
-                    break;
-                }
-                if (metadata.TopicErrorCode == ErrorCode.LeaderNotAvailable) {
-                    if (attemptLimit <= 0) {
-                        throw new KafkaException(metadata.TopicErrorCode);
-                    }
-                    response = (TopicMetadataResponse)Invoke(request);
-                }
-                else {
-                    throw new KafkaException(metadata.TopicErrorCode);
-                }
-            }
-            return response;
-        }
-
-        private Response Invoke(TopicMetadataRequest request) {
-            using (var responseDispatcher = _client.Send(request)) {
-                return responseDispatcher.ParseResult();
-            }
-        }
-
+        
         public Int64 Offset(String topicName, OffsetTimeOption offsetTime = OffsetTimeOption.Latest) {
             var request = new OffsetRequest();
             request.ReplicaId = 0;
@@ -60,7 +31,7 @@ namespace Chuye.Kafka {
                  }
             };
 
-            using (var responseDispatcher = _client.Send(request)) {
+            using (var responseDispatcher = _connection.Send(request)) {
                 var response = (OffsetResponse)responseDispatcher.ParseResult();
                 var errors = response.TopicPartitions.SelectMany(x => x.PartitionOffsets)
                     .Where(x => x.ErrorCode != x.ErrorCode);
@@ -92,7 +63,7 @@ namespace Chuye.Kafka {
                 }
             };
 
-            using (var responseDispatcher = _client.Send(request)) {
+            using (var responseDispatcher = _connection.Send(request)) {
                 var offsetCommitResponse = (OffsetCommitResponse)responseDispatcher.ParseResult();
                 var errros = offsetCommitResponse.TopicPartitions
                     .SelectMany(r => r.Details)
@@ -113,7 +84,7 @@ namespace Chuye.Kafka {
                 }
             };
 
-            using (var responseDispatcher = _client.Send(request)) {
+            using (var responseDispatcher = _connection.Send(request)) {
                 var offsetFetchResponse = (OffsetFetchResponse)responseDispatcher.ParseResult();
                 var errros = offsetFetchResponse.TopicPartitions
                     .SelectMany(r => r.Details)
@@ -143,7 +114,7 @@ namespace Chuye.Kafka {
                 }
             };
 
-            using (var responseDispatcher = _client.Send(request)) {
+            using (var responseDispatcher = _connection.Send(request)) {
                 var response = (FetchResponse)responseDispatcher.ParseResult();
                 var messages = response.TopicPartitions.SelectMany(x => x.MessageBodys)
                     .SelectMany(x => x.MessageSet.Items);
@@ -169,7 +140,7 @@ namespace Chuye.Kafka {
         }
 
         public void Dispose() {
-            _client.Dispose();
+            _connection.Dispose();
         }
     }
 

@@ -9,15 +9,47 @@ using Chuye.Kafka.Protocol.Implement;
 using Chuye.Kafka.Serialization;
 
 namespace Chuye.Kafka {
-    public class Client : IDisposable {
+    public class Connection : IDisposable {
         private readonly Option _option;
         private readonly BufferManager _bufferManager;
         private readonly SocketManager _socketManager;
 
-        public Client(Option option) {
+        public Connection(Option option) {
             _option = option;
             _bufferManager = BufferManager.CreateBufferManager(option.MaxBufferSize, option.MaxBufferSize);
             _socketManager = new SocketManager();
+        }
+
+
+        public TopicMetadataResponse TopicMetadata(String topicName) {
+            var request = new TopicMetadataRequest();
+            request.TopicNames = new[] { topicName };
+            var attemptLimit = 5;
+            var response = (TopicMetadataResponse)Invoke(request);
+            while (attemptLimit-- > 0) {
+                var metadata = response.TopicMetadatas[0];
+                if (metadata.TopicErrorCode == ErrorCode.NoError) {
+                    break;
+                }
+                if (metadata.TopicErrorCode == ErrorCode.LeaderNotAvailable) {
+                    Debug.WriteLine("LeaderNotAvailable while hanlde TopicMetadata(\"{0}\")", args: topicName);
+                    if (attemptLimit <= 0) {
+                        throw new KafkaException(metadata.TopicErrorCode);
+                    }
+                    Thread.Sleep(50);
+                    response = (TopicMetadataResponse)Invoke(request);
+                }
+                else {
+                    throw new KafkaException(metadata.TopicErrorCode);
+                }
+            }
+            return response;
+        }
+
+        public Response Invoke(TopicMetadataRequest request) {
+            using (var responseDispatcher = Send(request)) {
+                return responseDispatcher.ParseResult();
+            }
         }
 
         public IResponseDispatcher Send(Request request) {

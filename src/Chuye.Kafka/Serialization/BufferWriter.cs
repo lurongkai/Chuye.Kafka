@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace Chuye.Kafka.Serialization {
@@ -20,8 +21,8 @@ namespace Chuye.Kafka.Serialization {
         }
 
         public BufferWriter(Byte[] bytes, Int32 offset) {
-            _bytes         = bytes;
-            _startOffset   = offset;
+            _bytes = bytes;
+            _startOffset = offset;
             _currentOffset = offset;
         }
 
@@ -100,6 +101,75 @@ namespace Chuye.Kafka.Serialization {
             //Array.Copy(_bytes, 0, _bytes, _offset++, _bytes.Length);
             _currentOffset += value.Length;
             return this;
+        }
+
+        public BufferWriter Write(Int32[] value) {
+            if (value == null) {
+                Write(-1);
+                return this;
+            }
+
+            Write((Int32)value.Length);
+            foreach (var item in value) {
+                Write(item);
+            }
+            return this;
+        }
+
+        public BufferWriter Write(String[] value) {
+            if (value == null) {
+                Write(-1);
+                return this;
+            }
+
+            Write((Int32)value.Length);
+            foreach (var item in value) {
+                Write(item);
+            }
+            return this;
+        }
+
+        internal BufferWriter Write(IEnumerable<IWriteable> array) {
+            if (array == null) {
+                Write(-1);
+                return this;
+            }
+            var arraySizeWriter = new ArraySizeWriter(this, _currentOffset);
+            var size = 0;
+            foreach (var item in array) {
+                item.SaveTo(this);
+                size++;
+            }
+            arraySizeWriter.SetArraySize(size);
+            arraySizeWriter.Dispose();
+            return this;
+        }
+
+        private class ArraySizeWriter : IComputable {
+            private Int32 _previousPosition;
+            private Int32 _arraySize;
+            private BufferWriter _writer;
+
+            public Int32 Output {
+                get { throw new NotImplementedException(); }
+            }
+
+            public ArraySizeWriter(BufferWriter writer, Int32 previousPosition) {
+                _writer = writer;
+                _previousPosition = previousPosition;
+                _writer.Write(0);
+            }
+
+            public void SetArraySize(Int32 arraySize) {
+                _arraySize = arraySize;
+            }
+
+            public void Dispose() {
+                var currentPosition = _writer._currentOffset;
+                _writer._currentOffset = _previousPosition;
+                _writer.Write(_arraySize);
+                _writer._currentOffset = currentPosition;
+            }
         }
 
         private class CrcWriter : IComputable {

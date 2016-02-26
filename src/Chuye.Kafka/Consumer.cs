@@ -118,10 +118,10 @@ namespace Chuye.Kafka {
             request.MaxWaitTime = 100;
             request.MinBytes = 4096;
             request.TopicPartitions = new[] {
-                new TopicPartition {
+                new FetchRequestTopicPartition {
                     TopicName          = topicName,
                     FetchOffsetDetails = new [] {
-                        new FetchOffsetDetail {
+                        new FetchRequestTopicPartitionDetail {
                             Partition   = 0,
                             FetchOffset = fetchOffset,
                             MaxBytes    = 60 * 1024

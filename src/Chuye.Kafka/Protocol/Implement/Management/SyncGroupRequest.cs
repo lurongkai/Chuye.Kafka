@@ -27,21 +27,29 @@ namespace Chuye.Kafka.Protocol.Implement.Management {
             writer.Write(GroupId);
             writer.Write(GenerationId);
             writer.Write(MemberId);
+            writer.Write(GroupAssignments);
+        }
 
-            writer.Write(GroupAssignments.Length);
-            foreach (var item in GroupAssignments) {
-                item.SaveTo(writer);
-            }
+        protected override void DeserializeContent(BufferReader reader) {
+            GroupId          = reader.ReadString();
+            GenerationId     = reader.ReadInt32();
+            MemberId         = reader.ReadString();
+            GroupAssignments = reader.ReadArray<SyncGroupRequestGroupAssignment>();
         }
     }
 
-    public class SyncGroupRequestGroupAssignment : IWriteable {
+    public class SyncGroupRequestGroupAssignment : IWriteable, IReadable {
         public String MemberId { get; set; }
         public Byte[] MemberAssignment { get; set; }
 
         public void SaveTo(BufferWriter writer) {
             writer.Write(MemberId);
             writer.Write(MemberAssignment);
+        }
+
+        public void FetchFrom(BufferReader reader) {
+            MemberId         = reader.ReadString();
+            MemberAssignment = reader.ReadBytes();
         }
     }
 }

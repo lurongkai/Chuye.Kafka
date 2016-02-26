@@ -21,5 +21,10 @@ namespace Chuye.Kafka.Protocol.Implement.Management {
             writer.Write(GroupId);
             writer.Write(MemberId);
         }
+
+        protected override void DeserializeContent(BufferReader reader) {
+            GroupId  = reader.ReadString();
+            MemberId = reader.ReadString();
+        }
     }
 }

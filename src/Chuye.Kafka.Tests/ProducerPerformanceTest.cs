@@ -6,7 +6,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Chuye.Kafka.Tests {
     [TestClass]
-    public class PerformanceTest {
+    public class ProducerPerformanceTest {
         const Int32 count = 1000;
 
         [TestMethod]

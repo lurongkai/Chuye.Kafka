@@ -32,21 +32,30 @@ namespace Chuye.Kafka.Protocol.Implement.Management {
             writer.Write(SessionTimeout);
             writer.Write(MemberId);
             writer.Write(ProtocolType);
+            writer.Write(GroupProtocols);
+        }
 
-            writer.Write(GroupProtocols.Length);
-            foreach (var item in GroupProtocols) {
-                item.SaveTo(writer);
-            }
+        protected override void DeserializeContent(BufferReader reader) {
+            GroupId        = reader.ReadString();
+            SessionTimeout = reader.ReadInt32();
+            MemberId       = reader.ReadString();
+            ProtocolType   = reader.ReadString();
+            GroupProtocols = reader.ReadArray<JoinGroupRequestGroupProtocol>();
         }
     }
 
-    public class JoinGroupRequestGroupProtocol : IWriteable {
+    public class JoinGroupRequestGroupProtocol : IWriteable, IReadable {
         public String ProtocolName { get; set; }
         public Byte[] ProtocolMetadata { get; set; }
 
         public void SaveTo(BufferWriter writer) {
             writer.Write(ProtocolName);
             writer.Write(ProtocolMetadata);
+        }
+
+        public void FetchFrom(BufferReader reader) {
+            ProtocolName     = reader.ReadString();
+            ProtocolMetadata = reader.ReadBytes();
         }
     }
 }

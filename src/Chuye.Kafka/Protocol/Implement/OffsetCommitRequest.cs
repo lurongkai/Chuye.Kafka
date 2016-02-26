@@ -43,10 +43,12 @@ namespace Chuye.Kafka.Protocol.Implement {
 
         protected override void SerializeContent(BufferWriter writer) {
             writer.Write(ConsumerGroup);
-            writer.Write(TopicPartitions.Length);
-            for (int i = 0; i < TopicPartitions.Length; i++) {
-                TopicPartitions[i].SaveTo(writer);
-            }
+            writer.Write(TopicPartitions);
+        }
+
+        protected override void DeserializeContent(BufferReader reader) {
+            ConsumerGroup   = reader.ReadString();
+            TopicPartitions = reader.ReadArray<OffsetCommitRequestTopicPartitionV0>();
         }
     }
 
@@ -67,7 +69,17 @@ namespace Chuye.Kafka.Protocol.Implement {
         public OffsetCommitRequestTopicPartitionV1[] TopicPartitions { get; set; }
 
         protected override void SerializeContent(BufferWriter writer) {
-            throw new NotImplementedException();
+            writer.Write(ConsumerGroup);
+            writer.Write(ConsumerGroupGenerationId);
+            writer.Write(ConsumerId);
+            writer.Write(TopicPartitions);
+        }
+
+        protected override void DeserializeContent(BufferReader reader) {
+            ConsumerGroup             = reader.ReadString();
+            ConsumerGroupGenerationId = reader.ReadInt32();
+            ConsumerId                = reader.ReadString();
+            TopicPartitions           = reader.ReadArray<OffsetCommitRequestTopicPartitionV1>();
         }
     }
 
@@ -93,41 +105,49 @@ namespace Chuye.Kafka.Protocol.Implement {
             writer.Write(ConsumerGroupGenerationId);
             writer.Write(ConsumerId);
             writer.Write(RetentionTime);
+            writer.Write(TopicPartitions);
+        }
 
-            writer.Write(TopicPartitions.Length);
-            for (int i = 0; i < TopicPartitions.Length; i++) {
-                TopicPartitions[i].SaveTo(writer);
-            }
+        protected override void DeserializeContent(BufferReader reader) {
+            ConsumerGroup             = reader.ReadString();
+            ConsumerGroupGenerationId = reader.ReadInt32();
+            ConsumerId                = reader.ReadString();
+            RetentionTime             = reader.ReadInt64();
+            TopicPartitions           = reader.ReadArray<OffsetCommitRequestTopicPartitionV0>();
         }
     }
 
-    public class OffsetCommitRequestTopicPartitionV0 : IWriteable {
+    public class OffsetCommitRequestTopicPartitionV0 : IWriteable, IReadable {
         public String TopicName { get; set; }
         public OffsetCommitRequestTopicPartitionDetailV0[] Details { get; set; }
 
         public void SaveTo(BufferWriter writer) {
             writer.Write(TopicName);
-            writer.Write(Details.Length);
-            for (int i = 0; i < Details.Length; i++) {
-                Details[i].SaveTo(writer);
-            }
+            writer.Write(Details);
+        }
+
+        public void FetchFrom(BufferReader reader) {
+            TopicName = reader.ReadString();
+            Details   = reader.ReadArray<OffsetCommitRequestTopicPartitionDetailV0>();
         }
     }
 
-    public class OffsetCommitRequestTopicPartitionV1 : IWriteable {
+    public class OffsetCommitRequestTopicPartitionV1 : IWriteable, IReadable {
         public String TopicName { get; set; }
         public OffsetCommitRequestTopicPartitionDetailV1[] Details { get; set; }
 
         public void SaveTo(BufferWriter writer) {
             writer.Write(TopicName);
-            writer.Write(Details.Length);
-            for (int i = 0; i < Details.Length; i++) {
-                Details[i].SaveTo(writer);
-            }
+            writer.Write(Details);
+        }
+
+        public void FetchFrom(BufferReader reader) {
+            TopicName = reader.ReadString();
+            Details   = reader.ReadArray<OffsetCommitRequestTopicPartitionDetailV1>();
         }
     }
 
-    public class OffsetCommitRequestTopicPartitionDetailV0 : IWriteable {
+    public class OffsetCommitRequestTopicPartitionDetailV0 : IWriteable, IReadable {
         public Int32 Partition { get; set; }
         public Int64 Offset { get; set; }
         public String Metadata { get; set; }
@@ -137,9 +157,15 @@ namespace Chuye.Kafka.Protocol.Implement {
             writer.Write(Offset);
             writer.Write(Metadata);
         }
+
+        public void FetchFrom(BufferReader reader) {
+            Partition = reader.ReadInt32();
+            Offset    = reader.ReadInt64();
+            Metadata  = reader.ReadString();
+        }
     }
 
-    public class OffsetCommitRequestTopicPartitionDetailV1 : IWriteable {
+    public class OffsetCommitRequestTopicPartitionDetailV1 : IWriteable, IReadable {
         public Int32 Partition { get; set; }
         public Int64 Offset { get; set; }
         public Int64 TimeStamp { get; set; }
@@ -150,6 +176,13 @@ namespace Chuye.Kafka.Protocol.Implement {
             writer.Write(Offset);
             writer.Write(TimeStamp);
             writer.Write(Metadata);
+        }
+
+        public void FetchFrom(BufferReader reader) {
+            Partition = reader.ReadInt32();
+            Offset    = reader.ReadInt64();
+            TimeStamp = reader.ReadInt64();
+            Metadata  = reader.ReadString();
         }
     }
 }

@@ -18,10 +18,11 @@ namespace Chuye.Kafka.Protocol.Implement.Management {
         }
 
         protected override void SerializeContent(BufferWriter writer) {
-            writer.Write(GroupId.Length);
-            foreach (var item in GroupId) {
-                writer.Write(item);
-            }
+            writer.Write(GroupId);
+        }
+
+        protected override void DeserializeContent(BufferReader reader) {
+            GroupId = reader.ReadStrings();
         }
     }
 }

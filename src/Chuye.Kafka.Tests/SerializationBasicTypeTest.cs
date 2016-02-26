@@ -7,7 +7,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Chuye.Kafka.Tests {
     [TestClass]
-    public class SerializationTest {
+    public class SerializationBasicTypeTest {
         [TestMethod]
         public void Reading_writing_reversible() {
             var bytes = new Byte[10240];

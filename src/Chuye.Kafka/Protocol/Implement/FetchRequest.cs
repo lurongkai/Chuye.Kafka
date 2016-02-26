@@ -23,7 +23,7 @@ namespace Chuye.Kafka.Protocol.Implement {
         /// </summary>
         public Int32 MaxWaitTime { get; set; }
         public Int32 MinBytes { get; set; }
-        public TopicPartition[] TopicPartitions { get; set; }
+        public FetchRequestTopicPartition[] TopicPartitions { get; set; }
 
         public FetchRequest()
             : base(ApiKey.FetchRequest) {
@@ -33,33 +33,33 @@ namespace Chuye.Kafka.Protocol.Implement {
             writer.Write(ReplicaId);
             writer.Write(MaxWaitTime);
             writer.Write(MinBytes);
+            writer.Write(TopicPartitions);
+        }
 
-            writer.Write(TopicPartitions.Length);
-            foreach (var partition in TopicPartitions) {
-                partition.SaveTo(writer);
-            }
+        protected override void DeserializeContent(BufferReader reader) {
+            ReplicaId       = reader.ReadInt32();
+            MaxWaitTime     = reader.ReadInt32();
+            MinBytes        = reader.ReadInt32();
+            TopicPartitions = reader.ReadArray<FetchRequestTopicPartition>();
         }
     }
 
-    public class TopicPartition : IWriteable {
+    public class FetchRequestTopicPartition : IWriteable, IReadable {
         public String TopicName { get; set; }
-        public FetchOffsetDetail[] FetchOffsetDetails { get; set; }
+        public FetchRequestTopicPartitionDetail[] FetchOffsetDetails { get; set; }
 
         public void SaveTo(BufferWriter writer) {
             writer.Write(TopicName);
-            if (FetchOffsetDetails == null) {
-                writer.Write(0);
-                return;
-            }
+            writer.Write(FetchOffsetDetails);
+        }
 
-            writer.Write(FetchOffsetDetails.Length);
-            foreach (var detail in FetchOffsetDetails) {
-                detail.SaveTo(writer);
-            }
+        public void FetchFrom(BufferReader reader) {
+            TopicName          = reader.ReadString();
+            FetchOffsetDetails = reader.ReadArray<FetchRequestTopicPartitionDetail>();
         }
     }
 
-    public class FetchOffsetDetail : IWriteable {
+    public class FetchRequestTopicPartitionDetail : IWriteable, IReadable {
         public Int32 Partition { get; set; }
         public Int64 FetchOffset { get; set; }
         public Int32 MaxBytes { get; set; }
@@ -68,6 +68,12 @@ namespace Chuye.Kafka.Protocol.Implement {
             writer.Write(Partition);
             writer.Write(FetchOffset);
             writer.Write(MaxBytes);
+        }
+
+        public void FetchFrom(BufferReader reader) {
+            Partition   = reader.ReadInt32();
+            FetchOffset = reader.ReadInt64();
+            MaxBytes    = reader.ReadInt32();
         }
     }
 }

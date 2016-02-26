@@ -93,5 +93,43 @@ namespace Chuye.Kafka.Serialization {
             }            
             return Encoding.UTF8.GetString(buffer);
         }
+
+        internal Int32[] ReadIntegers() {
+            var size = ReadInt32();
+            if (size == -1) {
+                return null;
+            }
+            var array = new Int32[size];
+            for (int i = 0; i < size; i++) {
+                array[i] = ReadInt32();
+            }
+            return array;
+        }
+
+        internal String[] ReadStrings() {
+            var size = ReadInt32();
+            if (size == -1) {
+                return null;
+            }
+            var array = new String[size];
+            for (int i = 0; i < size; i++) {
+                array[i] = ReadString();
+            }
+            return array;
+        }
+
+        internal T[] ReadArray<T>() where T : IReadable, new() {
+            var size = ReadInt32();
+            if (size == -1) {
+                return null;
+            }
+
+            var array = new T[size];
+            for (int i = 0; i < size; i++) {
+                array[i] = new T();
+                array[i].FetchFrom(this);
+            }
+            return array;
+        }
     }
 }

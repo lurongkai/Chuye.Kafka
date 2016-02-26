@@ -18,28 +18,32 @@ namespace Chuye.Kafka.Protocol.Implement {
         /// ApiVersion 1 and above fetch from Kafka, version 0 fetches from ZooKeeper
         /// </summary>
         public OffsetFetchRequest()
-            : base(ApiKey.OffsetFetchRequest) {            
+            : base(ApiKey.OffsetFetchRequest) {
         }
 
         protected override void SerializeContent(BufferWriter writer) {
             writer.Write(ConsumerGroup);
-            writer.Write(TopicPartitions.Length);
-            foreach (var item in TopicPartitions) {
-                item.SaveTo(writer);
-            }
+            writer.Write(TopicPartitions);
+        }
+
+        protected override void DeserializeContent(BufferReader reader) {
+            ConsumerGroup   = reader.ReadString();
+            TopicPartitions = reader.ReadArray<OffsetFetchRequestTopicPartition>();
         }
     }
 
-    public class OffsetFetchRequestTopicPartition : IWriteable {
+    public class OffsetFetchRequestTopicPartition : IWriteable, IReadable {
         public String TopicName { get; set; }
         public Int32[] Partitions { get; set; }
 
         public void SaveTo(BufferWriter writer) {
             writer.Write(TopicName);
-            writer.Write(Partitions.Length);
-            foreach (var item in Partitions) {
-                writer.Write(item);
-            }            
+            writer.Write(Partitions);
+        }
+
+        public void FetchFrom(BufferReader reader) {
+            TopicName  = reader.ReadString();
+            Partitions = reader.ReadInt32Array();
         }
     }
 }

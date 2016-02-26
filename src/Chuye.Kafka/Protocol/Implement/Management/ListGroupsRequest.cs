@@ -14,5 +14,8 @@ namespace Chuye.Kafka.Protocol.Implement.Management {
 
         protected override void SerializeContent(BufferWriter writer) {
         }
+
+        protected override void DeserializeContent(BufferReader reader) {
+        }
     }
 }

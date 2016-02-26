@@ -20,12 +20,11 @@ namespace Chuye.Kafka.Protocol.Implement {
         }
 
         protected override void SerializeContent(BufferWriter writer) {
-            writer.Write(TopicNames.Length);
-            foreach (var item in TopicNames) {
-                writer.Write(item);
-            }
+            writer.Write(TopicNames);
+        }
+
+        protected override void DeserializeContent(BufferReader reader) {
+            TopicNames = reader.ReadStrings();
         }
     }
-
-    
 }

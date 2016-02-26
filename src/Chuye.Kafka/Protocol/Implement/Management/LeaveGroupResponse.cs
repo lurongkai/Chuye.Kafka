@@ -20,5 +20,9 @@ namespace Chuye.Kafka.Protocol.Implement.Management {
         protected override void DeserializeContent(BufferReader reader) {
             ErrorCode = (ErrorCode)reader.ReadInt16();
         }
+
+        protected override void SerializeContent(BufferWriter writer) {
+            writer.Write((Int16)ErrorCode);
+        }
     }
 }

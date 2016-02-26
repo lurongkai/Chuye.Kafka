@@ -12,23 +12,13 @@ namespace Chuye.Kafka.Protocol.Implement {
         public TopicMetadata[] TopicMetadatas { get; set; }
 
         protected override void DeserializeContent(BufferReader reader) {
-            var brokerSize = reader.ReadInt32();
-            if (brokerSize != -1) {
-                Brokers = new Broker[brokerSize];
-                for (int i = 0; i < Brokers.Length; i++) {
-                    Brokers[i] = new Broker();
-                    Brokers[i].FetchFrom(reader);
-                }
-            }
-            var topicMetadataSize = reader.ReadInt32();
-            if (topicMetadataSize != -1)
-                TopicMetadatas = new TopicMetadata[topicMetadataSize];
-            {
-                for (int i = 0; i < TopicMetadatas.Length; i++) {
-                    TopicMetadatas[i] = new TopicMetadata();
-                    TopicMetadatas[i].FetchFrom(reader);
-                }
-            }
+            Brokers = reader.ReadArray<Broker>();
+            TopicMetadatas = reader.ReadArray<TopicMetadata>();
+        }
+
+        protected override void SerializeContent(BufferWriter writer) {
+            writer.Write(Brokers);
+            writer.Write(TopicMetadatas);
         }
     }
 
@@ -36,21 +26,27 @@ namespace Chuye.Kafka.Protocol.Implement {
     //  NodeId => int32
     //  Host => string
     //  Port => int32
-    public class Broker : IReadable {
+    public class Broker : IReadable, IWriteable {
         public Int32 NodeId { get; set; }
         public String Host { get; set; }
         public Int32 Port { get; set; }
 
         public void FetchFrom(BufferReader reader) {
             NodeId = reader.ReadInt32();
-            Host = reader.ReadString();
-            Port = reader.ReadInt32();
+            Host   = reader.ReadString();
+            Port   = reader.ReadInt32();
+        }
+
+        public void SaveTo(BufferWriter writer) {
+            writer.Write(NodeId);
+            writer.Write(Host);
+            writer.Write(Port);
         }
     }
 
     //TopicMetadata => TopicErrorCode TopicName [PartitionMetadata]
     //  TopicErrorCode => int16
-    public class TopicMetadata : IReadable {
+    public class TopicMetadata : IReadable, IWriteable {
         //Possible Error Codes: 
         // UnknownTopic (3)
         // LeaderNotAvailable (5)
@@ -61,13 +57,15 @@ namespace Chuye.Kafka.Protocol.Implement {
         public PartitionMetadata[] PartitionMetadatas { get; set; }
 
         public void FetchFrom(BufferReader reader) {
-            TopicErrorCode = (ErrorCode)reader.ReadInt16();
-            TopicName = reader.ReadString();
-            PartitionMetadatas = new PartitionMetadata[reader.ReadInt32()];
-            for (int i = 0; i < PartitionMetadatas.Length; i++) {
-                PartitionMetadatas[i] = new PartitionMetadata();
-                PartitionMetadatas[i].FetchFrom(reader);
-            }
+            TopicErrorCode     = (ErrorCode)reader.ReadInt16();
+            TopicName          = reader.ReadString();
+            PartitionMetadatas = reader.ReadArray<PartitionMetadata>();
+        }
+
+        public void SaveTo(BufferWriter writer) {
+            writer.Write((Int16)TopicErrorCode);
+            writer.Write(TopicName);
+            writer.Write(PartitionMetadatas);
         }
     }
 
@@ -77,7 +75,7 @@ namespace Chuye.Kafka.Protocol.Implement {
     //  Leader => int32
     //  Replicas => [int32]
     //  Isr => [int32]  
-    public class PartitionMetadata : IReadable {
+    public class PartitionMetadata : IReadable, IWriteable {
         public ErrorCode PartitionErrorCode { get; set; }
         public Int32 PartitionId { get; set; }
         public Int32 Leader { get; set; }
@@ -86,16 +84,18 @@ namespace Chuye.Kafka.Protocol.Implement {
 
         public void FetchFrom(BufferReader reader) {
             PartitionErrorCode = (ErrorCode)reader.ReadInt16();
-            PartitionId = reader.ReadInt32();
-            Leader = reader.ReadInt32();
-            Replicas = new Int32[reader.ReadInt32()];
-            for (int i = 0; i < Replicas.Length; i++) {
-                Replicas[i] = reader.ReadInt32();
-            }
-            Isr = new Int32[reader.ReadInt32()];
-            for (int i = 0; i < Isr.Length; i++) {
-                Isr[i] = reader.ReadInt32();
-            }
+            PartitionId        = reader.ReadInt32();
+            Leader             = reader.ReadInt32();
+            Replicas           = reader.ReadInt32Array();
+            Isr                = reader.ReadInt32Array();
+        }
+
+        public void SaveTo(BufferWriter writer) {
+            writer.Write((Int16)PartitionErrorCode);
+            writer.Write(PartitionId);
+            writer.Write(Leader);
+            writer.Write(Replicas);
+            writer.Write(Isr);
         }
     }
 }

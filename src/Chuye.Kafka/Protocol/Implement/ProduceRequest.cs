@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 using Chuye.Kafka.Serialization;
 
 namespace Chuye.Kafka.Protocol.Implement {
-//ProduceRequest => RequiredAcks Timeout [TopicName [Partition MessageSetSize MessageSet]]
-//  RequiredAcks => int16
-//  Timeout => int32
-//  Partition => int32
-//  MessageSetSize => int32
+    //ProduceRequest => RequiredAcks Timeout [TopicName [Partition MessageSetSize MessageSet]]
+    //  RequiredAcks => int16
+    //  Timeout => int32
+    //  Partition => int32
+    //  MessageSetSize => int32
     public class ProduceRequest : Request {
         public ProduceRequest()
             : base(ApiKey.ProduceRequest) {
@@ -23,10 +23,13 @@ namespace Chuye.Kafka.Protocol.Implement {
         protected override void SerializeContent(BufferWriter writer) {
             writer.Write((Int16)RequiredAcks);
             writer.Write(Timeout);
-            writer.Write(TopicPartitions.Length);
-            foreach (var item in TopicPartitions) {
-                item.SaveTo(writer);
-            }
+            writer.Write(TopicPartitions);
+        }
+
+        protected override void DeserializeContent(BufferReader reader) {
+            RequiredAcks    = (AcknowlegeStrategy)reader.ReadInt16();
+            Timeout         = reader.ReadInt32();
+            TopicPartitions = reader.ReadArray<ProduceRequestTopicPartition>();
         }
 
         public static ProduceRequest Create(String topicName, IList<KeyedMessage> messages, AcknowlegeStrategy strategy) {
@@ -57,7 +60,7 @@ namespace Chuye.Kafka.Protocol.Implement {
                     TopicName = topicName,
                     Details =new [] {
                         new ProduceRequestTopicDetail {
-                            Partition = 0, 
+                            Partition = 0,
                             MessageSets = new MessageSetCollection {
                                 Items = messageSetArray
                             }
@@ -67,32 +70,42 @@ namespace Chuye.Kafka.Protocol.Implement {
             };
             return request;
         }
+
     }
 
-    public class ProduceRequestTopicPartition : IWriteable {
+    public class ProduceRequestTopicPartition : IWriteable, IReadable {
         public String TopicName { get; set; }
         public ProduceRequestTopicDetail[] Details { get; set; }
 
         public void SaveTo(BufferWriter writer) {
             writer.Write(TopicName);
-            writer.Write(Details.Length);
-            foreach (var item in Details) {
-                item.SaveTo(writer);
-            }
+            writer.Write(Details);
+        }
+
+        public void FetchFrom(BufferReader reader) {
+            TopicName = reader.ReadString();
+            Details   = reader.ReadArray<ProduceRequestTopicDetail>();
         }
     }
 
-    public class ProduceRequestTopicDetail : IWriteable {
+    public class ProduceRequestTopicDetail : IWriteable, IReadable {
         public Int32 Partition { get; set; }
-        //public Int32 MessageSetSize { get; set; }
+        public Int32 MessageSetSize { get; private set; }
         public MessageSetCollection MessageSets { get; set; }
 
         public void SaveTo(BufferWriter writer) {
             writer.Write(Partition);
-            //writer.Write(MessageSetSize);
-            using (writer.PrepareLength()) {
-                MessageSets.SaveTo(writer);
-            }
+            var compute = writer.PrepareLength();
+            MessageSets.SaveTo(writer);
+            compute.Dispose();
+            MessageSetSize = compute.Output;
+        }
+
+        public void FetchFrom(BufferReader reader) {
+            Partition      = reader.ReadInt32();
+            MessageSetSize = reader.ReadInt32();
+            MessageSets    = new MessageSetCollection(MessageSetSize);
+            MessageSets.FetchFrom(reader);
         }
     }
 }

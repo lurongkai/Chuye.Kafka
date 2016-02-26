@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.ServiceModel.Channels;
@@ -55,6 +56,7 @@ namespace Chuye.Kafka {
                 if (!socket.Connected) {
                     socket.Connect(_option.Host, _option.Port);
                 }
+                //Debug.WriteLine(String.Join(" ", requestBytes.Take(requestBytesCount)));
                 socket.Send(requestBytes, 0, requestBytesCount, SocketFlags.None);
                 var produceRequest = request as ProduceRequest;
                 if (produceRequest != null && produceRequest.RequiredAcks == AcknowlegeStrategy.Immediate) {

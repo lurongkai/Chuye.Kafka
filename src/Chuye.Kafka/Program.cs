@@ -19,7 +19,7 @@ namespace Chuye.Kafka {
 
             //Client_TopicMetadata_Demo();
             //Consumer_Offset_Fetch_Demo();
-            Consumer_Group_Operate();
+            //Consumer_Group_Operate();
             //Producer_Post_Demo();
             //Producer_Post_Immediate_Benchmark();
 
@@ -48,18 +48,18 @@ namespace Chuye.Kafka {
                 }
             }
         }
-
+        
         static void Producer_Post_Demo() {
             var messages = new List<KeyedMessage>();
-            messages.Add("Hello kafka, demo message begin at " + DateTime.Now);
-            messages.Add("Set some cloud service");
-            messages.Add(new KeyedMessage("cloud", "Microsoft Azure"));
-            messages.Add(new KeyedMessage("cloud", "Amazon Aws"));
-            messages.Add("Set some animals");
-            messages.Add(new KeyedMessage("animals", "penguin"));
-            messages.Add(new KeyedMessage("animals", "bear"));
-            messages.Add(new KeyedMessage("animals", "anteater"));
-            messages.Add("Demo message ended at " + DateTime.Now);
+            messages.Add("Demo message begin at " + DateTime.Now);
+            //messages.Add("Set some cloud service");
+            //messages.Add(new KeyedMessage("cloud", "Microsoft Azure"));
+            //messages.Add(new KeyedMessage("cloud", "Amazon Aws"));
+            //messages.Add("Set some animals");
+            //messages.Add(new KeyedMessage("animals", "penguin"));
+            //messages.Add(new KeyedMessage("animals", "bear"));
+            //messages.Add(new KeyedMessage("animals", "anteater"));
+            //messages.Add("Demo message ended at " + DateTime.Now);
 
             var option = Option.LoadDefault();
             using (var connection = new Connection(option)) {

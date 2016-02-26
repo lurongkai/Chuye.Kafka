@@ -22,27 +22,31 @@ namespace Chuye.Kafka.Protocol.Implement {
 
         protected override void SerializeContent(BufferWriter writer) {
             writer.Write(ReplicaId);
-            writer.Write(TopicPartitions.Length);
-            foreach (var item in TopicPartitions) {
-                item.SaveTo(writer);
-            }
+            writer.Write(TopicPartitions);
+        }
+
+        protected override void DeserializeContent(BufferReader reader) {
+            ReplicaId       = reader.ReadInt32();
+            TopicPartitions = reader.ReadArray<OffsetsRequestTopicPartition>();
         }
     }
 
-    public class OffsetsRequestTopicPartition : IWriteable {
+    public class OffsetsRequestTopicPartition : IWriteable, IReadable {
         public String TopicName { get; set; }
         public OffsetsRequestTopicPartitionDetail[] Details { get; set; }
 
         public void SaveTo(BufferWriter writer) {
             writer.Write(TopicName);
-            writer.Write(Details.Length);
-            foreach (var item in Details) {
-                item.SaveTo(writer);
-            }
+            writer.Write(Details);
+        }
+
+        public void FetchFrom(BufferReader reader) {
+            TopicName = reader.ReadString();
+            Details   = reader.ReadArray<OffsetsRequestTopicPartitionDetail>();
         }
     }
 
-    public class OffsetsRequestTopicPartitionDetail : IWriteable {
+    public class OffsetsRequestTopicPartitionDetail : IWriteable, IReadable {
         public Int32 Partition { get; set; }
         /// <summary>
         /// Used to ask for all messages before a certain time (ms). There are two special values. 
@@ -57,6 +61,12 @@ namespace Chuye.Kafka.Protocol.Implement {
             writer.Write(Partition);
             writer.Write(Time);
             writer.Write(MaxNumberOfOffsets);
+        }
+
+        public void FetchFrom(BufferReader reader) {
+            Partition          = reader.ReadInt32();
+            Time               = reader.ReadInt64();
+            MaxNumberOfOffsets = reader.ReadInt32();
         }
     }
 }

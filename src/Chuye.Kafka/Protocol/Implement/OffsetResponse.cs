@@ -15,39 +15,30 @@ namespace Chuye.Kafka.Protocol.Implement {
         public OffsetResponseTopicPartition[] TopicPartitions { get; set; }
 
         protected override void DeserializeContent(BufferReader reader) {
-            var size = reader.ReadInt32();
-            if (size == -1) {
-                return;
-            }
+            TopicPartitions = reader.ReadArray<OffsetResponseTopicPartition>();
+        }
 
-            TopicPartitions = new OffsetResponseTopicPartition[size];
-            for (int i = 0; i < size; i++) {
-                TopicPartitions[i] = new OffsetResponseTopicPartition();
-                TopicPartitions[i].FetchFrom(reader);
-            }
+        protected override void SerializeContent(BufferWriter writer) {
+            writer.Write(TopicPartitions);
         }
     }
 
-    public class OffsetResponseTopicPartition : IReadable {
+    public class OffsetResponseTopicPartition : IReadable, IWriteable {
         public String TopicName { get; set; }
-        public PartitionOffset[] PartitionOffsets { get; set; }
+        public OffsetResponsePartitionOffset[] PartitionOffsets { get; set; }
 
         public void FetchFrom(BufferReader reader) {
-            TopicName = reader.ReadString();
-            var size = reader.ReadInt32();
-            if (size == -1) {
-                return;
-            }
+            TopicName        = reader.ReadString();
+            PartitionOffsets = reader.ReadArray<OffsetResponsePartitionOffset>();
+        }
 
-            PartitionOffsets = new PartitionOffset[size];
-            for (int i = 0; i < size; i++) {
-                PartitionOffsets[i] = new PartitionOffset();
-                PartitionOffsets[i].FetchFrom(reader);
-            }
+        public void SaveTo(BufferWriter writer) {
+            writer.Write(TopicName);
+            writer.Write(PartitionOffsets);
         }
     }
 
-    public class PartitionOffset : IReadable {
+    public class OffsetResponsePartitionOffset : IReadable, IWriteable {
         public Int32 Partition { get; set; }
         //Possible Error Codes
         //* UNKNOWN_TOPIC_OR_PARTITION (3)
@@ -59,14 +50,13 @@ namespace Chuye.Kafka.Protocol.Implement {
         public void FetchFrom(BufferReader reader) {
             Partition = reader.ReadInt32();
             ErrorCode = (ErrorCode)reader.ReadInt16();
-            var size = reader.ReadInt32();
-            if (size == -1) {
-                return;
-            }
-            Offsets = new Int64[size];
-            for (int i = 0; i < size; i++) {
-                Offsets[i] = reader.ReadInt64();
-            }
+            Offsets   = reader.ReadInt64Array();
+        }
+
+        public void SaveTo(BufferWriter writer) {
+            writer.Write(Partition);
+            writer.Write((Int16)ErrorCode);
+            writer.Write(Offsets);
         }
     }
 }

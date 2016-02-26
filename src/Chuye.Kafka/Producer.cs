@@ -33,7 +33,7 @@ namespace Chuye.Kafka {
                 }
 
                 var response = (ProduceResponse)responseDispatcher.ParseResult();
-                var errors = response.TopicPartitions.SelectMany(x => x.Offsets)
+                var errors = response.TopicPartitions.SelectMany(x => x.Details)
                     .Where(x => x.ErrorCode != ErrorCode.NoError);
                 if (errors.Any()) {
                     throw new KafkaException(errors.First().ErrorCode);
@@ -57,7 +57,7 @@ namespace Chuye.Kafka {
                 }
 
                 var response = (ProduceResponse)responseDispatcher.ParseResult();
-                var errors = response.TopicPartitions.SelectMany(x => x.Offsets)
+                var errors = response.TopicPartitions.SelectMany(x => x.Details)
                     .Where(x => x.ErrorCode != ErrorCode.NoError);
                 if (errors.Any()) {
                     throw new KafkaException(errors.First().ErrorCode);

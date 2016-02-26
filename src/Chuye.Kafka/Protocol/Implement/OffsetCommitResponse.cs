@@ -15,45 +15,42 @@ namespace Chuye.Kafka.Protocol.Implement {
         public OffsetCommitResponseTopicPartition[] TopicPartitions { get; set; }
 
         protected override void DeserializeContent(BufferReader reader) {
-            var size = reader.ReadInt32();
-            if (size == -1) {
-                return;
-            }
-            TopicPartitions = new OffsetCommitResponseTopicPartition[size];
-            for (int i = 0; i < size; i++) {
-                TopicPartitions[i] = new OffsetCommitResponseTopicPartition();
-                TopicPartitions[i].FetchFrom(reader);
-            }
+            TopicPartitions = reader.ReadArray<OffsetCommitResponseTopicPartition>();
+        }
+
+        protected override void SerializeContent(BufferWriter writer) {
+            writer.Write(TopicPartitions);
         }
     }
 
-    public class OffsetCommitResponseTopicPartition : IReadable {
+    public class OffsetCommitResponseTopicPartition : IReadable, IWriteable {
         public String TopicName { get; set; }
 
         public OffsetCommitResponseTopicPartitionDetail[] Details { get; set; }
 
         public void FetchFrom(BufferReader reader) {
             TopicName = reader.ReadString();
-            var size = reader.ReadInt32();
-            if (size == -1) {
-                return;
-            }
+            Details   = reader.ReadArray<OffsetCommitResponseTopicPartitionDetail>();
+        }
 
-            Details = new OffsetCommitResponseTopicPartitionDetail[size];
-            for (int i = 0; i < size; i++) {
-                Details[i] = new OffsetCommitResponseTopicPartitionDetail();
-                Details[i].FetchFrom(reader);
-            }
+        public void SaveTo(BufferWriter writer) {
+            writer.Write(TopicName);
+            writer.Write(Details);
         }
     }
 
-    public class OffsetCommitResponseTopicPartitionDetail : IReadable {
+    public class OffsetCommitResponseTopicPartitionDetail : IReadable, IWriteable {
         public Int32 Partition { get; set; }
         public ErrorCode ErrorCode { get; set; }
 
         public void FetchFrom(BufferReader reader) {
             Partition = reader.ReadInt32();
             ErrorCode = (ErrorCode)reader.ReadInt16();
+        }
+
+        public void SaveTo(BufferWriter writer) {
+            writer.Write(Partition);
+            writer.Write((Int16)ErrorCode);
         }
     }
 }

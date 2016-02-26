@@ -17,17 +17,29 @@ namespace Chuye.Kafka.Protocol {
         public Int32 Size { get; private set; }
         public Int32 CorrelationId { get; private set; }
 
-        public void Read(ArraySegment<Byte> buffer) {
-            Read(buffer.Array, buffer.Offset);
+        public void Deserialize(ArraySegment<Byte> buffer) {
+            Deserialize(buffer.Array, buffer.Offset);
         }
 
-        public void Read(Byte[] bytes, Int32 offset) {
-            var reader = new BufferReader(bytes, offset);
-            Size = reader.ReadInt32();
+        public void Deserialize(Byte[] bytes, Int32 offset) {
+            var reader    = new BufferReader(bytes, offset);
+            Size          = reader.ReadInt32();
             CorrelationId = reader.ReadInt32();
             DeserializeContent(reader);
         }
 
+        public Int32 Serialize(Byte[] bytes, Int32 offset) {
+            var writer  = new BufferWriter(bytes, offset);
+            var compute = writer.PrepareLength();
+            writer.Write(CorrelationId);
+            SerializeContent(writer);
+            compute.Dispose();
+            Size = compute.Output;
+            return writer.Count;
+        }
+
         protected abstract void DeserializeContent(BufferReader reader);
+
+        protected abstract void SerializeContent(BufferWriter writer);
     }
 }

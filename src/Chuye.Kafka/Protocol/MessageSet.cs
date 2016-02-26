@@ -37,7 +37,8 @@ namespace Chuye.Kafka.Protocol {
 
         public void SaveTo(BufferWriter writer) {
             //N.B., MessageSets are not preceded by an int32 like other array elements in the protocol.
-            //writer.Write(Items.Length);
+            //writer.Write(Items.Length); //Error
+            //writer.Write(Items); //Error
             foreach (var item in Items) {
                 item.SaveTo(writer);
             }
@@ -79,11 +80,11 @@ namespace Chuye.Kafka.Protocol {
         public Byte[] Value { get; set; }
 
         public void FetchFrom(BufferReader reader) {
-            Crc = reader.ReadInt32();
-            MagicByte = reader.ReadByte();
+            Crc        = reader.ReadInt32();
+            MagicByte  = reader.ReadByte();
             Attributes = reader.ReadByte();
-            Key = reader.ReadBytes();
-            Value = reader.ReadBytes();
+            Key        = reader.ReadBytes();
+            Value      = reader.ReadBytes();
         }
 
         public void SaveTo(BufferWriter writer) {

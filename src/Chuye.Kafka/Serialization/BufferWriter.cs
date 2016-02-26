@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace Chuye.Kafka.Serialization {
@@ -7,18 +8,22 @@ namespace Chuye.Kafka.Serialization {
         private Int32 _startOffset;
         private Int32 _currentOffset;
 
+        public Int32 Offset {
+            get { return _currentOffset; }
+        }
+
+        public Int32 Count {
+            get { return _currentOffset - _startOffset; }
+        }
+
         public BufferWriter(ArraySegment<Byte> buffer)
             : this(buffer.Array, buffer.Offset) {
         }
 
         public BufferWriter(Byte[] bytes, Int32 offset) {
-            _bytes         = bytes;
-            _startOffset   = offset;
+            _bytes = bytes;
+            _startOffset = offset;
             _currentOffset = offset;
-        }
-
-        public Int32 Count {
-            get { return _currentOffset - _startOffset; }
         }
 
         internal IComputable PrepareCrc() {
@@ -96,6 +101,33 @@ namespace Chuye.Kafka.Serialization {
             //Array.Copy(_bytes, 0, _bytes, _offset++, _bytes.Length);
             _currentOffset += value.Length;
             return this;
+        }
+
+        internal class ArraySizeWriter : IComputable {
+            private Int32 _previousPosition;
+            private Int32 _arraySize;
+            private BufferWriter _writer;
+
+            public Int32 Output {
+                get { throw new NotImplementedException(); }
+            }
+
+            public ArraySizeWriter(BufferWriter writer, Int32 previousPosition) {
+                _writer = writer;
+                _previousPosition = previousPosition;
+                _writer.Write(0);
+            }
+
+            public void SetArraySize(Int32 arraySize) {
+                _arraySize = arraySize;
+            }
+
+            public void Dispose() {
+                var currentPosition = _writer._currentOffset;
+                _writer._currentOffset = _previousPosition;
+                _writer.Write(_arraySize);
+                _writer._currentOffset = currentPosition;
+            }
         }
 
         private class CrcWriter : IComputable {

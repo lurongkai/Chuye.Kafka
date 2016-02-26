@@ -43,7 +43,7 @@ namespace Chuye.Kafka.Protocol.Implement {
 
         public void FetchFrom(BufferReader reader) {
             TopicName  = reader.ReadString();
-            Partitions = reader.ReadIntegers();
+            Partitions = reader.ReadInt32Array();
         }
     }
 }

@@ -17,7 +17,7 @@ namespace Chuye.Kafka.Protocol {
     //ClientId => string
     //-------------------------------------------------------------------------
     //RequestMessage => MetadataRequest | ProduceRequest | FetchRequest | OffsetRequest | OffsetCommitRequest | OffsetFetchRequest
-    public abstract class Request : IWriteable, IReadable {
+    public abstract class Request {
         private static Int32 CurrentCorrelationId;
         private const String DefaultClientId = "chuye.kafka";
 
@@ -45,16 +45,6 @@ namespace Chuye.Kafka.Protocol {
         public Int32 Serialize(Byte[] bytes, Int32 offset) {
             Verify();
             var writer = new BufferWriter(bytes, offset);
-            SaveTo(writer);
-            return writer.Count;
-        }
-
-        public void Deserialize(Byte[] bytes, Int32 offset) {
-            var reader = new BufferReader(bytes, offset);
-            FetchFrom(reader);
-        }
-
-        public virtual void SaveTo(BufferWriter writer) {
             var compute = writer.PrepareLength();
             writer.Write((Int16)ApiKey);
             writer.Write(ApiVersion);
@@ -63,13 +53,13 @@ namespace Chuye.Kafka.Protocol {
             SerializeContent(writer);
             compute.Dispose();
             Size = compute.Output;
+            return writer.Count;
         }
 
-        protected abstract void SerializeContent(BufferWriter writer);
-
-        public void FetchFrom(BufferReader reader) {
-            Size          = reader.ReadInt32();
-            var apiKey    = (ApiKey)reader.ReadInt16();
+        public void Deserialize(Byte[] bytes, Int32 offset) {
+            var reader = new BufferReader(bytes, offset);
+            Size       = reader.ReadInt32();
+            var apiKey = (ApiKey)reader.ReadInt16();
             if (ApiKey != apiKey) {
                 throw new InvalidOperationException("Request type definition error");
             }
@@ -79,8 +69,9 @@ namespace Chuye.Kafka.Protocol {
             DeserializeContent(reader);
         }
 
-        protected abstract void DeserializeContent(BufferReader reader);
+        protected abstract void SerializeContent(BufferWriter writer);
 
+        protected abstract void DeserializeContent(BufferReader reader);
     }
 }
 

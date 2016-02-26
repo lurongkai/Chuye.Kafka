@@ -103,49 +103,7 @@ namespace Chuye.Kafka.Serialization {
             return this;
         }
 
-        public BufferWriter Write(Int32[] value) {
-            if (value == null) {
-                Write(-1);
-                return this;
-            }
-
-            Write((Int32)value.Length);
-            foreach (var item in value) {
-                Write(item);
-            }
-            return this;
-        }
-
-        public BufferWriter Write(String[] value) {
-            if (value == null) {
-                Write(-1);
-                return this;
-            }
-
-            Write((Int32)value.Length);
-            foreach (var item in value) {
-                Write(item);
-            }
-            return this;
-        }
-
-        internal BufferWriter Write(IEnumerable<IWriteable> array) {
-            if (array == null) {
-                Write(-1);
-                return this;
-            }
-            var arraySizeWriter = new ArraySizeWriter(this, _currentOffset);
-            var size = 0;
-            foreach (var item in array) {
-                item.SaveTo(this);
-                size++;
-            }
-            arraySizeWriter.SetArraySize(size);
-            arraySizeWriter.Dispose();
-            return this;
-        }
-
-        private class ArraySizeWriter : IComputable {
+        internal class ArraySizeWriter : IComputable {
             private Int32 _previousPosition;
             private Int32 _arraySize;
             private BufferWriter _writer;

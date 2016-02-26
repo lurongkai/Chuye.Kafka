@@ -90,21 +90,21 @@ namespace Chuye.Kafka.Protocol.Implement {
 
     public class ProduceRequestTopicDetail : IWriteable, IReadable {
         public Int32 Partition { get; set; }
-        //public Int32 MessageSetSize { get; set; }
+        public Int32 MessageSetSize { get; private set; }
         public MessageSetCollection MessageSets { get; set; }
 
         public void SaveTo(BufferWriter writer) {
             writer.Write(Partition);
-            //writer.Write(MessageSetSize);
-            using (writer.PrepareLength()) {
-                MessageSets.SaveTo(writer);
-            }
+            var compute = writer.PrepareLength();
+            MessageSets.SaveTo(writer);
+            compute.Dispose();
+            MessageSetSize = compute.Output;
         }
 
         public void FetchFrom(BufferReader reader) {
             Partition          = reader.ReadInt32();
-            var messageSetSize = reader.ReadInt32(); //MessageSetSize
-            MessageSets        = new MessageSetCollection(messageSetSize);
+            MessageSetSize = reader.ReadInt32(); 
+            MessageSets        = new MessageSetCollection(MessageSetSize);
             MessageSets.FetchFrom(reader);
         }
     }

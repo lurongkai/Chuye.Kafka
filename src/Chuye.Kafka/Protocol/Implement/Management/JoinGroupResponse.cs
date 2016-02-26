@@ -37,25 +37,31 @@ namespace Chuye.Kafka.Protocol.Implement.Management {
             GroupProtocol = reader.ReadString();
             LeaderId      = reader.ReadString();
             MemberId      = reader.ReadString();
+            Members       = reader.ReadArray<JoinGroupResponseMember>();
+        }
 
-            var size = reader.ReadInt32();
-            if (size != -1) {
-                Members = new JoinGroupResponseMember[size];
-            }
-            for (int i = 0; i < size; i++) {
-                Members[i] = new JoinGroupResponseMember();
-                Members[i].FetchFrom(reader);
-            }
+        protected override void SerializeContent(BufferWriter writer) {
+            writer.Write((Int16)ErrorCode);
+            writer.Write(GenerationId);
+            writer.Write(GroupProtocol);
+            writer.Write(LeaderId);
+            writer.Write(MemberId);
+            writer.Write(Members);
         }
     }
 
-    public class JoinGroupResponseMember : IReadable {
+    public class JoinGroupResponseMember : IReadable, IWriteable {
         public String MemberId { get; set; }
         public Byte[] MemberMetadata { get; set; }
 
         public void FetchFrom(BufferReader reader) {
             MemberId = reader.ReadString();
             MemberMetadata = reader.ReadBytes();
+        }
+
+        public void SaveTo(BufferWriter writer) {
+            writer.Write(MemberId);
+            writer.Write(MemberMetadata);
         }
     }
 }

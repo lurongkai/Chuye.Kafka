@@ -22,19 +22,15 @@ namespace Chuye.Kafka.Protocol.Implement.Management {
         public DescribeGroupsResponseDetail[] Details { get; set; }
 
         protected override void DeserializeContent(BufferReader reader) {
-            var size = reader.ReadInt32();
-            if (size == -1) {
-                return;
-            }
-            Details = new DescribeGroupsResponseDetail[size];
-            for (int i = 0; i < size; i++) {
-                Details[i] = new DescribeGroupsResponseDetail();
-                Details[i].FetchFrom(reader);
-            }
+            Details = reader.ReadArray<DescribeGroupsResponseDetail>();
+        }
+
+        protected override void SerializeContent(BufferWriter writer) {
+            writer.Write(Details);
         }
     }
 
-    public class DescribeGroupsResponseDetail : IReadable {
+    public class DescribeGroupsResponseDetail : IReadable, IWriteable {
         /// <summary>
         /// Possible Error Codes:
         ///  GROUP_LOAD_IN_PROGRESS (14)
@@ -50,25 +46,25 @@ namespace Chuye.Kafka.Protocol.Implement.Management {
         public DescribeGroupsResponseMember[] Members { get; set; }
 
         public void FetchFrom(BufferReader reader) {
-            ErrorCode = (ErrorCode)reader.ReadInt16();
-            GroupId = reader.ReadString();
-            State = reader.ReadString();
+            ErrorCode    = (ErrorCode)reader.ReadInt16();
+            GroupId      = reader.ReadString();
+            State        = reader.ReadString();
             ProtocolType = reader.ReadString();
-            Protocol = reader.ReadString();
+            Protocol     = reader.ReadString();
+            Members      = reader.ReadArray<DescribeGroupsResponseMember>();
+        }
 
-            var size = reader.ReadInt32();
-            if (size == -1) {
-                return;
-            }
-            Members = new DescribeGroupsResponseMember[size];
-            for (int i = 0; i < size; i++) {
-                Members[i] = new DescribeGroupsResponseMember();
-                Members[i].FetchFrom(reader);
-            }
+        public void SaveTo(BufferWriter writer) {
+            writer.Write((Int16)ErrorCode);
+            writer.Write(GroupId);
+            writer.Write(State);
+            writer.Write(ProtocolType);
+            writer.Write(Protocol);
+            writer.Write(Members);
         }
     }
 
-    public class DescribeGroupsResponseMember : IReadable {
+    public class DescribeGroupsResponseMember : IReadable, IWriteable {
         public String MemberId { get; set; }
         public String ClientId { get; set; }
         public String ClientHost { get; set; }
@@ -76,11 +72,19 @@ namespace Chuye.Kafka.Protocol.Implement.Management {
         public Byte[] MemberAssignment { get; set; }
 
         public void FetchFrom(BufferReader reader) {
-            MemberId = reader.ReadString();
-            ClientId = reader.ReadString();
-            ClientHost = reader.ReadString();
-            MemberMetadata = reader.ReadBytes();
+            MemberId         = reader.ReadString();
+            ClientId         = reader.ReadString();
+            ClientHost       = reader.ReadString();
+            MemberMetadata   = reader.ReadBytes();
             MemberAssignment = reader.ReadBytes();
+        }
+
+        public void SaveTo(BufferWriter writer) {
+            writer.Write(MemberId);
+            writer.Write(ClientId);
+            writer.Write(ClientHost);
+            writer.Write(MemberMetadata);
+            writer.Write(MemberAssignment);
         }
     }
 }

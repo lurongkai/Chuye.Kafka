@@ -9,7 +9,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Chuye.Kafka.Tests.Protocol {
     [TestClass]
-    public class RequestSerializationTest {
+    public class SerializationRequestTest {
         private readonly Random _random = new Random();
 
         [TestMethod]
@@ -29,9 +29,8 @@ namespace Chuye.Kafka.Tests.Protocol {
                  }
             };
 
-            var bytes = new Byte[10240];
+            var bytes = new Byte[1024];
             request.Serialize(bytes, 0);
-
             var request2 = new OffsetRequest();
             request2.Deserialize(bytes, 0);
 
@@ -57,9 +56,8 @@ namespace Chuye.Kafka.Tests.Protocol {
                 }
             };
 
-            var bytes = new Byte[10240];
+            var bytes = new Byte[1024];
             request.Serialize(bytes, 0);
-
             var request2 = new OffsetCommitRequestV0();
             request2.Deserialize(bytes, 0);
 
@@ -79,9 +77,8 @@ namespace Chuye.Kafka.Tests.Protocol {
                 }
             };
 
-            var bytes = new Byte[10240];
+            var bytes = new Byte[1024];
             request.Serialize(bytes, 0);
-
             var request2 = new OffsetFetchRequest();
             request2.Deserialize(bytes, 0);
 
@@ -109,9 +106,8 @@ namespace Chuye.Kafka.Tests.Protocol {
                 }
             };
 
-            var bytes = new Byte[10240];
+            var bytes = new Byte[1024];
             request.Serialize(bytes, 0);
-
             var request2 = new FetchRequest();
             request2.Deserialize(bytes, 0);
 
@@ -125,9 +121,8 @@ namespace Chuye.Kafka.Tests.Protocol {
             var request = new GroupCoordinatorRequest();
             request.GroupId = Guid.NewGuid().ToString();
 
-            var bytes = new Byte[10240];
+            var bytes = new Byte[1024];
             request.Serialize(bytes, 0);
-
             var request2 = new GroupCoordinatorRequest();
             request2.Deserialize(bytes, 0);
 
@@ -150,9 +145,8 @@ namespace Chuye.Kafka.Tests.Protocol {
                 }
             };
 
-            var bytes = new Byte[10240];
+            var bytes = new Byte[1024];
             request.Serialize(bytes, 0);
-
             var request2 = new JoinGroupRequest();
             request2.Deserialize(bytes, 0);
 
@@ -165,9 +159,8 @@ namespace Chuye.Kafka.Tests.Protocol {
         public void ListGroupsRequest() {
             var request = new ListGroupsRequest();
 
-            var bytes = new Byte[10240];
+            var bytes = new Byte[1024];
             request.Serialize(bytes, 0);
-
             var request2 = new ListGroupsRequest();
             request2.Deserialize(bytes, 0);
 
@@ -181,9 +174,8 @@ namespace Chuye.Kafka.Tests.Protocol {
             var request = new DescribeGroupsRequest();
             request.GroupId = new[] { Guid.NewGuid().ToString() };
 
-            var bytes = new Byte[10240];
+            var bytes = new Byte[1024];
             request.Serialize(bytes, 0);
-
             var request2 = new DescribeGroupsRequest();
             request2.Deserialize(bytes, 0);
 
@@ -205,9 +197,8 @@ namespace Chuye.Kafka.Tests.Protocol {
                 }
             };
 
-            var bytes = new Byte[10240];
+            var bytes = new Byte[1024];
             request.Serialize(bytes, 0);
-
             var request2 = new SyncGroupRequest();
             request2.Deserialize(bytes, 0);
 
@@ -223,9 +214,8 @@ namespace Chuye.Kafka.Tests.Protocol {
             request.GenerationId = _random.Next();
             request.MemberId = Guid.NewGuid().ToString();
 
-            var bytes = new Byte[10240];
+            var bytes = new Byte[1024];
             request.Serialize(bytes, 0);
-
             var request2 = new HeartbeatRequest();
             request2.Deserialize(bytes, 0);
 
@@ -240,9 +230,8 @@ namespace Chuye.Kafka.Tests.Protocol {
             request.GroupId = Guid.NewGuid().ToString();
             request.MemberId = Guid.NewGuid().ToString();
 
-            var bytes = new Byte[10240];
+            var bytes = new Byte[1024];
             request.Serialize(bytes, 0);
-
             var request2 = new LeaveGroupRequest();
             request2.Deserialize(bytes, 0);
 
@@ -286,9 +275,8 @@ namespace Chuye.Kafka.Tests.Protocol {
                 }
             };
 
-            var bytes = new Byte[10240];
-            request.Serialize(bytes, 0);
-
+            var bytes = new Byte[4096];
+            var writed = request.Serialize(bytes, 0);
             var request2 = new ProduceRequest();
             request2.Deserialize(bytes, 0);
 

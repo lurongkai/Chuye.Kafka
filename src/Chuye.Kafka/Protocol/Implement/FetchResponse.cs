@@ -17,34 +17,30 @@ namespace Chuye.Kafka.Protocol.Implement {
         public FetchResponseTopicPartition[] TopicPartitions { get; set; }
 
         protected override void DeserializeContent(BufferReader reader) {
-            var size = reader.ReadInt32();
-            TopicPartitions = new FetchResponseTopicPartition[size];
-            for (int i = 0; i < TopicPartitions.Length; i++) {
-                TopicPartitions[i] = new FetchResponseTopicPartition();
-                TopicPartitions[i].FetchFrom(reader);
-            }
+            TopicPartitions = reader.ReadArray<FetchResponseTopicPartition>();
+        }
+
+        protected override void SerializeContent(BufferWriter writer) {
+            writer.Write(TopicPartitions);
         }
     }
 
-    public class FetchResponseTopicPartition : IReadable {
+    public class FetchResponseTopicPartition : IReadable, IWriteable {
         public String TopicName { get; set; }
         public MessageBody[] MessageBodys { get; set; }
 
         public void FetchFrom(BufferReader reader) {
-            TopicName = reader.ReadString();
-            var size = reader.ReadInt32();
-            if (size == -1) {
-                return;
-            }
-            MessageBodys = new MessageBody[size];
-            for (int i = 0; i < MessageBodys.Length; i++) {
-                MessageBodys[i] = new MessageBody();
-                MessageBodys[i].FetchFrom(reader);
-            }
+            TopicName    = reader.ReadString();
+            MessageBodys = reader.ReadArray<MessageBody>();
+        }
+
+        public void SaveTo(BufferWriter writer) {
+            writer.Write(TopicName);
+            writer.Write(MessageBodys);
         }
     }
 
-    public class MessageBody : IReadable {
+    public class MessageBody : IReadable, IWriteable {
         public Int32 Partition { get; set; }
         //Possible Error Codes
         //* OFFSET_OUT_OF_RANGE (1)
@@ -58,12 +54,20 @@ namespace Chuye.Kafka.Protocol.Implement {
         public MessageSetCollection MessageSet { get; set; }
 
         public void FetchFrom(BufferReader reader) {
-            Partition = reader.ReadInt32();
-            ErrorCode = (ErrorCode)reader.ReadInt16();
+            Partition           = reader.ReadInt32();
+            ErrorCode           = (ErrorCode)reader.ReadInt16();
             HighwaterMarkOffset = reader.ReadInt64();
-            MessageSetSize = reader.ReadInt32();
-            MessageSet = new MessageSetCollection(MessageSetSize);
+            MessageSetSize      = reader.ReadInt32();
+            MessageSet          = new MessageSetCollection(MessageSetSize);
             MessageSet.FetchFrom(reader);
+        }
+
+        public void SaveTo(BufferWriter writer) {
+            writer.Write(Partition);
+            writer.Write((Int16)ErrorCode);
+            writer.Write(HighwaterMarkOffset);
+            writer.Write(MessageSetSize);
+            MessageSet.SaveTo(writer);
         }
     }
 }

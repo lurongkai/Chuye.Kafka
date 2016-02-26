@@ -22,25 +22,27 @@ namespace Chuye.Kafka.Protocol.Implement.Management {
 
         protected override void DeserializeContent(BufferReader reader) {
             ErrorCode = (ErrorCode)reader.ReadInt16();
-            var size = reader.ReadInt32();
-            if (size == -1) {
-                return;
-            }
-            Groups = new ListGroupsResponseGroup[size];
-            for (int i = 0; i < size; i++) {
-                Groups[i] = new ListGroupsResponseGroup();
-                Groups[i].FetchFrom(reader);
-            }
+            Groups    = reader.ReadArray<ListGroupsResponseGroup>();
+        }
+
+        protected override void SerializeContent(BufferWriter writer) {
+            writer.Write((Int16)ErrorCode);
+            writer.Write(Groups);
         }
     }
 
-    public class ListGroupsResponseGroup : IReadable {
+    public class ListGroupsResponseGroup : IReadable, IWriteable {
         public String GroupId { get; set; }
         public String ProtocolType { get; set; }
 
         public void FetchFrom(BufferReader reader) {
-            GroupId = reader.ReadString();
+            GroupId      = reader.ReadString();
             ProtocolType = reader.ReadString();
+        }
+
+        public void SaveTo(BufferWriter writer) {
+            writer.Write(GroupId);
+            writer.Write(ProtocolType);
         }
     }
 }

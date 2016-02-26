@@ -74,6 +74,7 @@
     <Compile Include="AdministrativeApiTest.cs" />
     <Compile Include="SerializationRequestTest.cs" />
     <Compile Include="SerializationBasicTypeTest.cs" />
+    <Compile Include="SerializationResponseTest.cs" />
     <Compile Include="ZooKeeperTest.cs" />
   </ItemGroup>
   <ItemGroup>

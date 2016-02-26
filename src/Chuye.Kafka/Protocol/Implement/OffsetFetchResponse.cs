@@ -16,37 +16,30 @@ namespace Chuye.Kafka.Protocol.Implement {
         public OffsetFetchResponseTopicPartition[] TopicPartitions { get; set; }
 
         protected override void DeserializeContent(BufferReader reader) {
-            var size = reader.ReadInt32();
-            if (size == -1) {
-                return;
-            }
-            TopicPartitions = new OffsetFetchResponseTopicPartition[size];
-            for (int i = 0; i < size; i++) {
-                TopicPartitions[i] = new OffsetFetchResponseTopicPartition();
-                TopicPartitions[i].FetchFrom(reader);
-            }
+            TopicPartitions = reader.ReadArray<OffsetFetchResponseTopicPartition>();
+        }
+
+        protected override void SerializeContent(BufferWriter writer) {
+            writer.Write(TopicPartitions);
         }
     }
 
-    public class OffsetFetchResponseTopicPartition : IReadable {
+    public class OffsetFetchResponseTopicPartition : IReadable, IWriteable {
         public String TopicName { get; set; }
         public OffsetFetchResponseTopicPartitionDetail[] Details { get; set; }
 
         public void FetchFrom(BufferReader reader) {
             TopicName = reader.ReadString();
-            var size = reader.ReadInt32();
-            if (size == -1) {
-                return;
-            }
-            Details = new OffsetFetchResponseTopicPartitionDetail[size];
-            for (int i = 0; i < size; i++) {
-                Details[i] = new OffsetFetchResponseTopicPartitionDetail();
-                Details[i].FetchFrom(reader);
-            }
+            Details   = reader.ReadArray<OffsetFetchResponseTopicPartitionDetail>();
+        }
+
+        public void SaveTo(BufferWriter writer) {
+            writer.Write(TopicName);
+            writer.Write(Details);
         }
     }
 
-    public class OffsetFetchResponseTopicPartitionDetail : IReadable {
+    public class OffsetFetchResponseTopicPartitionDetail : IReadable, IWriteable {
         public Int32 Partition { get; set; }
         public Int64 Offset { get; set; }
         public String Metadata { get; set; }
@@ -62,9 +55,16 @@ namespace Chuye.Kafka.Protocol.Implement {
 
         public void FetchFrom(BufferReader reader) {
             Partition = reader.ReadInt32();
-            Offset = reader.ReadInt64();
-            Metadata = reader.ReadString();
+            Offset    = reader.ReadInt64();
+            Metadata  = reader.ReadString();
             ErrorCode = (ErrorCode)reader.ReadInt16();
+        }
+
+        public void SaveTo(BufferWriter writer) {
+            writer.Write(Partition);
+            writer.Write(Offset);
+            writer.Write(Metadata);
+            writer.Write((Int16)ErrorCode);
         }
     }
 }

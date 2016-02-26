@@ -53,6 +53,8 @@
     <Compile Include="Producer.cs" />
     <Compile Include="Protocol\ReponseDispatcher.cs" />
     <Compile Include="Protocol\SocketManager.cs" />
+    <Compile Include="Serialization\BufferReaderExtension.cs" />
+    <Compile Include="Serialization\BufferWriterExtension.cs" />
     <Compile Include="Serialization\IComputable.cs" />
     <Compile Include="Serialization\IReadable.cs" />
     <Compile Include="Serialization\IWriteable.cs" />

@@ -47,7 +47,7 @@ namespace Chuye.Kafka.Protocol {
                 throw new ArgumentOutOfRangeException("apiKey");
             }
             var response = (Response)Activator.CreateInstance(responseTyp);
-            response.Read(_responseBytes, 0);
+            response.Deserialize(_responseBytes, 0);
             return response;
         }
 

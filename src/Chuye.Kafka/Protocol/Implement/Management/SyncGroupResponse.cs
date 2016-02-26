@@ -21,8 +21,13 @@ namespace Chuye.Kafka.Protocol.Implement.Management {
             //* UNKNOWN_MEMBER_ID (25)
             //* REBALANCE_IN_PROGRESS (27)
             //* GROUP_AUTHORIZATION_FAILED (30)
-            ErrorCode = (ErrorCode)reader.ReadInt16();
+            ErrorCode        = (ErrorCode)reader.ReadInt16();
             MemberAssignment = reader.ReadBytes();
+        }
+
+        protected override void SerializeContent(BufferWriter writer) {
+            writer.Write((Int16)ErrorCode);
+            writer.Write(MemberAssignment);
         }
     }
 }

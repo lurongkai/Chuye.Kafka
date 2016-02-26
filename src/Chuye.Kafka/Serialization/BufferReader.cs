@@ -53,7 +53,7 @@ namespace Chuye.Kafka.Serialization {
         public Int16 ReadInt16() {
             var buffer = new Byte[2];
             buffer[1] = _bytes[_currentOffset++];
-            buffer[0] = _bytes[_currentOffset++];            
+            buffer[0] = _bytes[_currentOffset++];
             return BitConverter.ToInt16(buffer, 0);
         }
 
@@ -78,7 +78,7 @@ namespace Chuye.Kafka.Serialization {
             buffer[0] = _bytes[_currentOffset++];
             return BitConverter.ToInt64(buffer, 0);
         }
-        
+
         public String ReadString() {
             var length = ReadInt16();
             if (length == -1) {
@@ -90,46 +90,8 @@ namespace Chuye.Kafka.Serialization {
             var buffer = new Byte[length];
             for (int i = 0; i < length; i++) {
                 buffer[i] = _bytes[_currentOffset++];
-            }            
+            }
             return Encoding.UTF8.GetString(buffer);
-        }
-
-        internal Int32[] ReadIntegers() {
-            var size = ReadInt32();
-            if (size == -1) {
-                return null;
-            }
-            var array = new Int32[size];
-            for (int i = 0; i < size; i++) {
-                array[i] = ReadInt32();
-            }
-            return array;
-        }
-
-        internal String[] ReadStrings() {
-            var size = ReadInt32();
-            if (size == -1) {
-                return null;
-            }
-            var array = new String[size];
-            for (int i = 0; i < size; i++) {
-                array[i] = ReadString();
-            }
-            return array;
-        }
-
-        internal T[] ReadArray<T>() where T : IReadable, new() {
-            var size = ReadInt32();
-            if (size == -1) {
-                return null;
-            }
-
-            var array = new T[size];
-            for (int i = 0; i < size; i++) {
-                array[i] = new T();
-                array[i].FetchFrom(this);
-            }
-            return array;
         }
     }
 }

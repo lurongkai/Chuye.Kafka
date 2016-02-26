@@ -22,10 +22,17 @@ namespace Chuye.Kafka.Protocol.Implement.Management {
         public Int32 CoordinatorPort { get; set; }
 
         protected override void DeserializeContent(BufferReader reader) {
-            ErrorCode = (ErrorCode)reader.ReadInt16();
-            CoordinatorId = reader.ReadInt32();
+            ErrorCode       = (ErrorCode)reader.ReadInt16();
+            CoordinatorId   = reader.ReadInt32();
             CoordinatorHost = reader.ReadString();
             CoordinatorPort = reader.ReadInt32();
+        }
+
+        protected override void SerializeContent(BufferWriter writer) {
+            writer.Write((Int16)ErrorCode);
+            writer.Write(CoordinatorId);
+            writer.Write(CoordinatorHost);
+            writer.Write(CoordinatorPort);
         }
     }
 }

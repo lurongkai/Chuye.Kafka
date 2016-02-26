@@ -68,6 +68,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PerformanceTest.cs" />
     <Compile Include="AdministrativeApiTest.cs" />
+    <Compile Include="Protocol\UnitTest1.cs" />
+    <Compile Include="SerializationTest.cs" />
     <Compile Include="ZooKeeperTest.cs" />
   </ItemGroup>
   <ItemGroup>

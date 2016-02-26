@@ -7,6 +7,14 @@ namespace Chuye.Kafka.Serialization {
         private Int32 _startOffset;
         private Int32 _currentOffset;
 
+        public Int32 Offset {
+            get { return _currentOffset; }
+        }
+
+        public Int32 Count {
+            get { return _currentOffset - _startOffset; }
+        }
+
         public BufferWriter(ArraySegment<Byte> buffer)
             : this(buffer.Array, buffer.Offset) {
         }
@@ -15,10 +23,6 @@ namespace Chuye.Kafka.Serialization {
             _bytes         = bytes;
             _startOffset   = offset;
             _currentOffset = offset;
-        }
-
-        public Int32 Count {
-            get { return _currentOffset - _startOffset; }
         }
 
         internal IComputable PrepareCrc() {

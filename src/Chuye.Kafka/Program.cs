@@ -22,7 +22,6 @@ namespace Chuye.Kafka {
             //Consumer_Group_Operate();
             //Producer_Post_Demo();
             //Producer_Post_Immediate_Benchmark();
-            ProducerDebug();
 
             if (Debugger.IsAttached) {
                 Console.WriteLine("Press <Enter> to exit");
@@ -49,16 +48,7 @@ namespace Chuye.Kafka {
                 }
             }
         }
-
-        static void ProducerDebug() {
-            var option = Option.LoadDefault();
-            using (var connection = new Connection(option)) {
-                var producer = new Producer(connection);
-                producer.Strategy = AcknowlegeStrategy.Written;
-                producer.Post(DemoTopic, null, "Hello World");
-            }
-        }
-
+        
         static void Producer_Post_Demo() {
             var messages = new List<KeyedMessage>();
             messages.Add("Demo message begin at " + DateTime.Now);

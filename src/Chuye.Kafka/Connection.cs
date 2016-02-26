@@ -56,7 +56,7 @@ namespace Chuye.Kafka {
                 if (!socket.Connected) {
                     socket.Connect(_option.Host, _option.Port);
                 }
-                Console.WriteLine(String.Join(" ", requestBytes.Take(requestBytesCount)));
+                //Debug.WriteLine(String.Join(" ", requestBytes.Take(requestBytesCount)));
                 socket.Send(requestBytes, 0, requestBytesCount, SocketFlags.None);
                 var produceRequest = request as ProduceRequest;
                 if (produceRequest != null && produceRequest.RequiredAcks == AcknowlegeStrategy.Immediate) {

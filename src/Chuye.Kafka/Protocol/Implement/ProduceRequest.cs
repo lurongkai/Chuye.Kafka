@@ -102,9 +102,9 @@ namespace Chuye.Kafka.Protocol.Implement {
         }
 
         public void FetchFrom(BufferReader reader) {
-            Partition          = reader.ReadInt32();
-            MessageSetSize = reader.ReadInt32(); 
-            MessageSets        = new MessageSetCollection(MessageSetSize);
+            Partition      = reader.ReadInt32();
+            MessageSetSize = reader.ReadInt32();
+            MessageSets    = new MessageSetCollection(MessageSetSize);
             MessageSets.FetchFrom(reader);
         }
     }

@@ -37,8 +37,11 @@ namespace Chuye.Kafka.Protocol {
 
         public void SaveTo(BufferWriter writer) {
             //N.B., MessageSets are not preceded by an int32 like other array elements in the protocol.
-            //writer.Write(Items.Length);
-            writer.Write(Items);
+            //writer.Write(Items.Length); //Error
+            //writer.Write(Items); //Error
+            foreach (var item in Items) {
+                item.SaveTo(writer);
+            }
         }
     }
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Diagnostics;
+using System.Net;
 using System.Net.Sockets;
 using System.ServiceModel.Channels;
 using System.Threading;
@@ -8,24 +9,53 @@ using System.Threading.Tasks;
 using Chuye.Kafka.Protocol;
 using Chuye.Kafka.Protocol.Implement;
 using Chuye.Kafka.Serialization;
+using System.Collections.Generic;
 
 namespace Chuye.Kafka {
-    public class Connection : IDisposable {
-        private readonly Option _option;
-        private readonly BufferManager _bufferManager;
-        private readonly SocketManager _socketManager;
+    public interface IRouter {
+        IConnection Route(String topicName, out Int32 partitionId);
+    }
+    
+    public interface IConnection {
+        IResponseDispatcher Send(Request request);
+        Task<IResponseDispatcher> SendAsync(Request request);
+    }
 
-        public Connection(Option option) {
-            _option = option;
-            _bufferManager = BufferManager.CreateBufferManager(option.MaxBufferSize, option.MaxBufferSize);
-            _socketManager = new SocketManager();
+    public class Router : Connection, IRouter {
+        private readonly Random _random;
+        private HashSet<Broker> _brokers;
+        private HashSet<TopicMetadata> _topics;
+
+        public Router(Option option)
+            : base(option) {
+            _random = new Random();
+            _brokers = new HashSet<Broker>();
+            _topics = new HashSet<TopicMetadata>();
         }
 
-        public TopicMetadataResponse TopicMetadata(String topicName) {
-            var request = new TopicMetadataRequest();
-            request.TopicNames = new[] { topicName };
+        public IConnection Route(String topicName, out Int32 partitionId) {
+            var topic = _topics.Where(r => r.TopicName.Equals(topicName)).SingleOrDefault();
+            if (topic == null) {
+                var resp = TopicMetadata(topicName);
+                foreach (var item in resp.Brokers) {
+                    _brokers.Add(item);
+                }
+                foreach (var item in resp.TopicMetadatas) {
+                    _topics.Add(item);
+                }
+                topic = resp.TopicMetadatas.Where(r => r.TopicName.Equals(topicName)).SingleOrDefault();
+            }
+
+            var partition = topic.PartitionMetadatas[_random.Next(topic.PartitionMetadatas.Length)];
+            var broker = _brokers.SingleOrDefault(b => b.NodeId == partition.Leader);
+            var option = new Option(broker.Host, broker.Port);
+            partitionId = partition.PartitionId;
+            return Clone(option);
+        }
+
+        public override TopicMetadataResponse TopicMetadata(String topicName) {
             var attemptLimit = 5;
-            var response = (TopicMetadataResponse)Invoke(request);
+            var response = base.TopicMetadata(topicName);
             while (attemptLimit-- > 0) {
                 var metadata = response.TopicMetadatas[0];
                 if (metadata.TopicErrorCode == ErrorCode.NoError) {
@@ -37,11 +67,48 @@ namespace Chuye.Kafka {
                         throw new KafkaException(metadata.TopicErrorCode);
                     }
                     Thread.Sleep(50);
-                    response = (TopicMetadataResponse)Invoke(request);
+                    response = base.TopicMetadata(topicName);
                 }
                 else {
                     throw new KafkaException(metadata.TopicErrorCode);
                 }
+            }
+            return response;
+        }
+    }
+
+    public class Connection : IConnection, IDisposable {
+        private readonly Option _option;
+        private readonly IPEndPoint _endPoint;
+        private readonly BufferManager _bufferManager;
+        private readonly SocketManager _socketManager;
+
+        public Connection(Option option) {
+            _option = option;
+            _endPoint = _option;
+            _bufferManager = BufferManager.CreateBufferManager(option.MaxBufferSize, option.MaxBufferSize);
+            _socketManager = new SocketManager();
+        }
+
+        private Connection(Option option, BufferManager bufferManager, SocketManager socketManager) {
+            _option = option;
+            _endPoint = option;
+            _bufferManager = bufferManager;
+            _socketManager = socketManager;
+        }
+
+        protected Connection Clone(Option option) {
+            return new Connection(option, _bufferManager, _socketManager);
+        }
+
+        public virtual TopicMetadataResponse TopicMetadata(String topicName) {
+            var request = new TopicMetadataRequest();
+            request.TopicNames = new[] { topicName };
+            var response = (TopicMetadataResponse)Invoke(request);
+            var errors = response.TopicMetadatas
+                .Where(x => x.TopicErrorCode != ErrorCode.NoError);
+            if (errors.Any()) {
+                throw new KafkaException(errors.First().TopicErrorCode);
             }
             return response;
         }
@@ -50,14 +117,21 @@ namespace Chuye.Kafka {
             Socket socket = null;
             Byte[] requestBytes = null;
             try {
-                socket = _socketManager.Obtain();
+                socket = _socketManager.Obtain(_endPoint);
+                if (!socket.Connected) {
+                    socket.Connect(_endPoint);
+                }
+
                 requestBytes = _bufferManager.TakeBuffer(_option.RequestBufferSize);
                 var requestBytesCount = request.Serialize(requestBytes, 0);
-                if (!socket.Connected) {
-                    socket.Connect(_option.Host, _option.Port);
-                }
+
                 //Debug.WriteLine(String.Join(" ", requestBytes.Take(requestBytesCount)));
                 socket.Send(requestBytes, 0, requestBytesCount, SocketFlags.None);
+
+                //var hostEntry = Dns.GetHostEntry(_option.Host);
+                //var endPoint = new IPEndPoint(hostEntry.AddressList[0], _option.Port);
+                //socket.SendTo(requestBytes, 0, requestBytesCount, SocketFlags.None, endPoint);
+
                 var produceRequest = request as ProduceRequest;
                 if (produceRequest != null && produceRequest.RequiredAcks == AcknowlegeStrategy.Immediate) {
                     return null;
@@ -98,7 +172,7 @@ namespace Chuye.Kafka {
             try {
                 requestBytes = _bufferManager.TakeBuffer(_option.RequestBufferSize);
                 var requestBytesCount = request.Serialize(requestBytes, 0);
-                using (var tcpClient = new TcpClient(_option.Host, _option.Port))
+                using (var tcpClient = new TcpClient(_endPoint))
                 using (var stream = tcpClient.GetStream()) {
                     stream.Write(requestBytes, 0, requestBytesCount);
                     var produceRequest = request as ProduceRequest;
@@ -142,7 +216,7 @@ namespace Chuye.Kafka {
             try {
                 requestBytes = _bufferManager.TakeBuffer(_option.RequestBufferSize);
                 var requestBytesCount = request.Serialize(requestBytes, 0);
-                using (var tcpClient = new TcpClient(_option.Host, _option.Port))
+                using (var tcpClient = new TcpClient(_endPoint))
                 using (var stream = tcpClient.GetStream()) {
                     await stream.WriteAsync(requestBytes, 0, requestBytesCount);
                     var produceRequest = request as ProduceRequest;

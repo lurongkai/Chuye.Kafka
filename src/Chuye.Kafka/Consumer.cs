@@ -83,11 +83,11 @@ namespace Chuye.Kafka {
             };
 
             var response = (OffsetCommitResponse)_connection.Invoke(request);
-            var errros = response.TopicPartitions
+            var errors = response.TopicPartitions
                 .SelectMany(r => r.Details)
                 .Where(x => x.ErrorCode != ErrorCode.NoError);
-            if (errros.Any()) {
-                throw new KafkaException(errros.First().ErrorCode);
+            if (errors.Any()) {
+                throw new KafkaException(errors.First().ErrorCode);
             }
         }
 
@@ -102,11 +102,11 @@ namespace Chuye.Kafka {
             };
 
             var response = (OffsetFetchResponse)_connection.Invoke(request);
-            var errros = response.TopicPartitions
+            var errors = response.TopicPartitions
                 .SelectMany(r => r.Details)
                 .Where(x => x.ErrorCode != ErrorCode.NoError);
-            if (errros.Any()) {
-                throw new KafkaException(errros.First().ErrorCode);
+            if (errors.Any()) {
+                throw new KafkaException(errors.First().ErrorCode);
             }
 
             return response.TopicPartitions[0].Details[0].Offset;
@@ -198,9 +198,9 @@ namespace Chuye.Kafka {
             var request = new DescribeGroupsRequest();
             request.GroupId = new[] { groupId ?? _groupId };
             var response = (DescribeGroupsResponse)_connection.Invoke(request);
-            var errros = response.Details.Where(x => x.ErrorCode != ErrorCode.NoError);
-            if (errros.Any()) {
-                throw new KafkaException(errros.First().ErrorCode);
+            var errors = response.Details.Where(x => x.ErrorCode != ErrorCode.NoError);
+            if (errors.Any()) {
+                throw new KafkaException(errors.First().ErrorCode);
             }
             return response;
         }

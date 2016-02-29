@@ -14,7 +14,7 @@ namespace Chuye.Kafka.Tests {
             Debug.Listeners.Clear();
             const String targetTopic = "immediateTopic";
             var option = Option.LoadDefault();
-            var connection = new Connection(option);
+            var connection = new Router(option);
             var producer = new Producer(connection);
             producer.Strategy = AcknowlegeStrategy.Immediate;
 
@@ -44,7 +44,7 @@ namespace Chuye.Kafka.Tests {
             Debug.Listeners.Clear();
             const String targetTopic = "writtenTopic";
             var option = Option.LoadDefault();
-            var connection = new Connection(option);
+            var connection = new Router(option);
             var producer = new Producer(connection);
             producer.Strategy = AcknowlegeStrategy.Written;
 

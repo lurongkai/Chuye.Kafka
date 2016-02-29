@@ -9,11 +9,11 @@ using Chuye.Kafka.Protocol.Implement;
 
 namespace Chuye.Kafka {
     public class Producer : IDisposable {
-        private readonly Connection _connection;
+        private readonly Router _connection;
 
         public AcknowlegeStrategy Strategy { get; set; }
 
-        public Producer(Connection connection) {
+        public Producer(Router connection) {
             _connection = connection;
         }
 
@@ -26,8 +26,11 @@ namespace Chuye.Kafka {
         }
 
         public void Post(String topicName, IList<KeyedMessage> messages) {
-            var request = ProduceRequest.Create(topicName, messages, Strategy);
-            using (var responseDispatcher = _connection.Send(request)) {
+            Int32 partitionId;
+            var connection = _connection.Route(topicName, out partitionId);
+
+            var request = ProduceRequest.Create(topicName, messages, Strategy, partitionId);
+            using (var responseDispatcher = connection.Send(request)) {
                 if (request.RequiredAcks == AcknowlegeStrategy.Immediate) {
                     return;
                 }
@@ -50,8 +53,11 @@ namespace Chuye.Kafka {
         }
 
         public async Task PostAsync(String topicName, IList<KeyedMessage> messages) {
-            var request = ProduceRequest.Create(topicName, messages, Strategy);
-            using (var responseDispatcher = await _connection.SendAsync(request)) {
+            Int32 partitionId;
+            var connection = _connection.Route(topicName, out partitionId);
+
+            var request = ProduceRequest.Create(topicName, messages, Strategy, partitionId);
+            using (var responseDispatcher = await connection.SendAsync(request)) {
                 if (request.RequiredAcks == AcknowlegeStrategy.Immediate) {
                     return;
                 }

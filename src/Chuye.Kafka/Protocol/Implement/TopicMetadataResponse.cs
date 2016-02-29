@@ -26,7 +26,7 @@ namespace Chuye.Kafka.Protocol.Implement {
     //  NodeId => int32
     //  Host => string
     //  Port => int32
-    public class Broker : IReadable, IWriteable {
+    public class Broker : IReadable, IWriteable, IEquatable<Broker> {
         public Int32 NodeId { get; set; }
         public String Host { get; set; }
         public Int32 Port { get; set; }
@@ -42,17 +42,36 @@ namespace Chuye.Kafka.Protocol.Implement {
             writer.Write(Host);
             writer.Write(Port);
         }
+
+        public Boolean Equals(Broker other) {
+            return other != null
+                && NodeId == other.NodeId
+                && String.Equals(Host, other.Host, StringComparison.OrdinalIgnoreCase)
+                && Port == other.Port;
+        }
+
+        public override Boolean Equals(Object obj) {
+            return obj != null
+                && obj is Broker
+                && Equals((Broker)obj);
+        }
+
+        public override Int32 GetHashCode() {
+            return NodeId.GetHashCode()
+                ^ (Host != null ? Host.GetHashCode() : 0)
+                ^ Port.GetHashCode();
+        }
     }
 
     //TopicMetadata => TopicErrorCode TopicName [PartitionMetadata]
     //  TopicErrorCode => int16
-    public class TopicMetadata : IReadable, IWriteable {
+    public class TopicMetadata : IReadable, IWriteable, IEquatable<TopicMetadata> {
         //Possible Error Codes: 
         // UnknownTopic (3)
         // LeaderNotAvailable (5)
         // InvalidTopic (17)
         // TopicAuthorizationFailed (29)
-        public ErrorCode TopicErrorCode { get; set; }
+    public ErrorCode TopicErrorCode { get; set; }
         public String TopicName { get; set; }
         public PartitionMetadata[] PartitionMetadatas { get; set; }
 
@@ -66,6 +85,21 @@ namespace Chuye.Kafka.Protocol.Implement {
             writer.Write((Int16)TopicErrorCode);
             writer.Write(TopicName);
             writer.Write(PartitionMetadatas);
+        }
+
+        public Boolean Equals(TopicMetadata other) {
+            return other != null
+                && String.Equals(TopicName, other.TopicName, StringComparison.Ordinal);
+        }
+
+        public override Boolean Equals(Object obj) {
+            return obj != null
+                && obj is TopicMetadata
+                && Equals((TopicMetadata)obj);
+        }
+
+        public override Int32 GetHashCode() {
+            return TopicName.GetHashCode();
         }
     }
 

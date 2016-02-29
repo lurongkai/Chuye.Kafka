@@ -2,12 +2,13 @@
 using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Chuye.Kafka {
-    public struct Option {
+    public struct Option : IEquatable<Option> {
         public String Host;
         public Int32 Port;
         public Int32 MaxBufferPoolSize;
@@ -46,6 +47,30 @@ namespace Chuye.Kafka {
             MaxBufferSize      = maxBufferSize;
             RequestBufferSize  = requestBufferSize;
             ResponseBufferSize = responseBufferSize;
+        }
+
+        public Boolean Equals(Option other) {
+            return String.Equals(Host, other.Host, StringComparison.OrdinalIgnoreCase)
+                && Port == other.Port;
+        }
+
+        public override Boolean Equals(Object obj) {
+            return (obj != null)
+                && obj is Option
+                && Equals((Option)obj);
+        }
+
+        public override Int32 GetHashCode() {
+            return (Host != null ? Host.GetHashCode() : 0)
+                ^ Port.GetHashCode();
+        }
+
+        public static implicit operator IPEndPoint(Option option) {
+            var addresses = Dns.GetHostAddresses(option.Host);
+            if (addresses.Length == 0) {
+                throw new InvalidOperationException();
+            }
+            return new IPEndPoint(addresses[0], option.Port);
         }
     }
 }

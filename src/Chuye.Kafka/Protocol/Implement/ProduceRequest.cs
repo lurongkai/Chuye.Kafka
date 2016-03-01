@@ -32,7 +32,7 @@ namespace Chuye.Kafka.Protocol.Implement {
             TopicPartitions = reader.ReadArray<ProduceRequestTopicPartition>();
         }
 
-        public static ProduceRequest Create(String topicName, IList<KeyedMessage> messages, AcknowlegeStrategy strategy) {
+        public static ProduceRequest Create(String topicName, IList<KeyedMessage> messages, AcknowlegeStrategy strategy, Int32 partition) {
             if (String.IsNullOrWhiteSpace(topicName)) {
                 throw new ArgumentOutOfRangeException("topicName");
             }
@@ -60,7 +60,7 @@ namespace Chuye.Kafka.Protocol.Implement {
                     TopicName = topicName,
                     Details =new [] {
                         new ProduceRequestTopicDetail {
-                            Partition = 0,
+                            Partition = partition,
                             MessageSets = new MessageSetCollection {
                                 Items = messageSetArray
                             }

@@ -22,14 +22,15 @@ namespace Chuye.Kafka {
         }
 
         public Boolean Equals(KeyedMessage other) {
-            return ((Key == null && other.Key == null)
-                    || (Key != null && other.Key != null && Key == other.Key))
-                && ((Message == null && other.Message == null)
-                    || (Message != null && other.Message != null && Message == other.Message));
+            return other != null
+                && String.Equals(Key, other.Key, StringComparison.Ordinal)
+                && String.Equals(Message, other.Message, StringComparison.Ordinal);
         }
 
-        public override Boolean Equals(Object obj) {
-            return obj != null && obj is KeyedMessage && Equals((KeyedMessage)obj);
+        public override Boolean Equals(Object other) {
+            return other != null 
+                && other is KeyedMessage 
+                && Equals((KeyedMessage)other);
         }
 
         public override Int32 GetHashCode() {

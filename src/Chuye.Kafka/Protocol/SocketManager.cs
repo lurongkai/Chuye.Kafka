@@ -5,40 +5,47 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using System.Net;
 
 namespace Chuye.Kafka.Protocol {
     public class SocketManager : IDisposable {
-        private readonly Stack<Socket> _availableSockets;
+        private readonly HashSet<Socket> _availableSockets;
         private readonly HashSet<Socket> _activeSockets;
 
         public SocketManager() {
-            _availableSockets = new Stack<Socket>();
+            _availableSockets = new HashSet<Socket>();
             _activeSockets = new HashSet<Socket>();
         }
 
-        public Socket Obtain() {
-            Socket socket;
-            if (_availableSockets.Count > 0) {
-                socket = _availableSockets.Pop();
+        public Socket Obtain(IPEndPoint endPoint) {
+            Socket socket = null;
+            foreach (var item in _availableSockets) {
+                if (item.RemoteEndPoint == null || item.RemoteEndPoint.Equals(endPoint)) {
+                    break;
+                }
             }
-            else {
-                socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+
+            if (socket != null) {
+                _availableSockets.Remove(socket);
+                _activeSockets.Add(socket);
+                return socket;
             }
+
+            socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             _activeSockets.Add(socket);
             return socket;
         }
 
         public void Release(Socket socket) {
             _activeSockets.Remove(socket);
-            _availableSockets.Push(socket);
+            _availableSockets.Add(socket);
         }
 
         public void Dispose() {
-            while (_availableSockets.Count > 0) {
-                var socket = _availableSockets.Pop();
+            foreach (var socket in _availableSockets) {
                 socket.Close();
             }
-
+            _availableSockets.Clear();
             foreach (var socket in _activeSockets) {
                 socket.Close();
             }

@@ -13,8 +13,7 @@ namespace Chuye.Kafka.Tests {
         public void SendMessag_Immediate() {
             Debug.Listeners.Clear();
             const String targetTopic = "immediateTopic";
-            var option = Option.LoadDefault();
-            var connection = new Connection(option);
+            var connection = new Router();
             var producer = new Producer(connection);
             producer.Strategy = AcknowlegeStrategy.Immediate;
 
@@ -43,8 +42,7 @@ namespace Chuye.Kafka.Tests {
         public void SendMessag_Written() {
             Debug.Listeners.Clear();
             const String targetTopic = "writtenTopic";
-            var option = Option.LoadDefault();
-            var connection = new Connection(option);
+            var connection = new Router();
             var producer = new Producer(connection);
             producer.Strategy = AcknowlegeStrategy.Written;
 

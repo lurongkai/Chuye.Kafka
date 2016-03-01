@@ -8,8 +8,8 @@ namespace Chuye.Kafka.Tests {
     public class ZooKeeperTest {
         [TestMethod]
         public void ListTopic() {
-            Option option = Option.LoadDefault();
-            using (ZooKeeper zk = new ZooKeeper(option.Host, TimeSpan.FromSeconds(1), null)) {
+            var section = KafkaConfigurationSection.LoadDefault();
+            using (ZooKeeper zk = new ZooKeeper(section.Broker.Host, TimeSpan.FromSeconds(1), null)) {
                 var topics = zk.GetChildren("/brokers/topics", false).ToArray();
             }
         }

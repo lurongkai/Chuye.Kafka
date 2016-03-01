@@ -17,17 +17,16 @@ namespace Chuye.Kafka {
             _connection = connection;
         }
 
-        public void Post(String topicName, String key, String message) {
-            Post(topicName, new KeyedMessage(key, message));
-        }
-
         public void Post(String topicName, KeyedMessage message) {
             Post(topicName, new[] { message });
         }
 
         public void Post(String topicName, IList<KeyedMessage> messages) {
-            var request = ProduceRequest.Create(topicName, messages, Strategy);
-            using (var responseDispatcher = _connection.Send(request)) {
+            var connection = _connection.Route(topicName);
+            var partitionId = connection.CurrentPartition;
+
+            var request = ProduceRequest.Create(topicName, messages, Strategy, partitionId);
+            using (var responseDispatcher = connection.Send(request)) {
                 if (request.RequiredAcks == AcknowlegeStrategy.Immediate) {
                     return;
                 }
@@ -41,17 +40,16 @@ namespace Chuye.Kafka {
             };
         }
 
-        public Task PostAsync(String topicName, String key, String message) {
-            return PostAsync(topicName, new KeyedMessage(key, message));
-        }
-
         public Task PostAsync(String topicName, KeyedMessage message) {
             return PostAsync(topicName, new[] { message });
         }
 
         public async Task PostAsync(String topicName, IList<KeyedMessage> messages) {
-            var request = ProduceRequest.Create(topicName, messages, Strategy);
-            using (var responseDispatcher = await _connection.SendAsync(request)) {
+            var connection = _connection.Route(topicName);
+            var partitionId = connection.CurrentPartition;
+
+            var request = ProduceRequest.Create(topicName, messages, Strategy, partitionId);
+            using (var responseDispatcher = await connection.SendAsync(request)) {
                 if (request.RequiredAcks == AcknowlegeStrategy.Immediate) {
                     return;
                 }
@@ -79,7 +77,7 @@ namespace Chuye.Kafka {
     ///   If it is -1 the server will block until the message is committed by all in sync replicas before sending a response. 
     ///   For any number > 1 the server will block waiting for this number of acknowledgements to occur (but the server will never wait for more acknowledgements than there are in-sync replicas).
     /// </summary>
-    public enum AcknowlegeStrategy : short  {
+    public enum AcknowlegeStrategy : short {
         Immediate = 0, Written = 1, Block = -1
     }
 

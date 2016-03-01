@@ -11,9 +11,8 @@ namespace Chuye.Kafka.Tests {
         private String _memberId;
         private Int32 _generationId;
 
-
         public AdministrativeApiTest() {
-            _connection = new Connection(Option.LoadDefault());
+            _connection = new Connection();
         }
 
         [TestMethod]
@@ -28,7 +27,6 @@ namespace Chuye.Kafka.Tests {
         }
 
         private void GroupCoordinator() {
-            var option = new Option("jusfr.kafka", 9092);
             var request = new GroupCoordinatorRequest();
             request.GroupId = demoConsumerGroup;
             _connection.Invoke(request.Dump("GroupCoordinatorRequest"))

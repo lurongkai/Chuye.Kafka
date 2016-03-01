@@ -10,7 +10,6 @@ using Chuye.Kafka.Protocol.Implement.Management;
 
 namespace Chuye.Kafka {
     public class Consumer : IDisposable {
-        private const Int32 DefaultPartition = 0;
         private const Int32 DefaultReplicaId = -1;
         private const String DefaultProtocolType = "";
         private const String DefaultProtocolName = "";
@@ -37,6 +36,9 @@ namespace Chuye.Kafka {
         }
 
         public Int64 Offset(String topicName, OffsetTimeOption offsetTime = OffsetTimeOption.Latest) {
+            var connection = _connection.Route(topicName);
+            var partitionId = connection.CurrentPartition;
+
             var request = new OffsetRequest();
             request.ReplicaId = DefaultReplicaId;
             request.TopicPartitions = new[] {
@@ -44,7 +46,7 @@ namespace Chuye.Kafka {
                      TopicName = topicName,
                      Details   = new [] {
                          new OffsetsRequestTopicPartitionDetail() {
-                             Partition          = DefaultPartition,
+                             Partition          = partitionId,
                              Time               = (Int64)offsetTime,
                              MaxNumberOfOffsets = 1
                          }
@@ -52,7 +54,7 @@ namespace Chuye.Kafka {
                  }
             };
 
-            var response = (OffsetResponse)_connection.Invoke(request);
+            var response = (OffsetResponse) ((Connection)connection).Invoke(request);
             var errors = response.TopicPartitions.SelectMany(x => x.PartitionOffsets)
                 .Where(x => x.ErrorCode != x.ErrorCode);
             if (errors.Any()) {
@@ -67,6 +69,9 @@ namespace Chuye.Kafka {
         }
 
         public void OffsetCommit(String topicName, String consumerGroup, Int64 offset) {
+            var connection = _connection.Route(topicName);
+            var partitionId = connection.CurrentPartition;
+
             var request = new OffsetCommitRequestV0();
             request.ConsumerGroup = consumerGroup;
             request.TopicPartitions = new OffsetCommitRequestTopicPartitionV0[1];
@@ -75,44 +80,50 @@ namespace Chuye.Kafka {
                     TopicName = topicName,
                     Details   = new [] {
                         new OffsetCommitRequestTopicPartitionDetailV0 {
-                            Partition = DefaultPartition,
+                            Partition = partitionId,
                             Offset    = offset
                         }
                     }
                 }
             };
 
-            var response = (OffsetCommitResponse)_connection.Invoke(request);
-            var errros = response.TopicPartitions
+            var response = (OffsetCommitResponse)((Connection)connection).Invoke(request);
+            var errors = response.TopicPartitions
                 .SelectMany(r => r.Details)
                 .Where(x => x.ErrorCode != ErrorCode.NoError);
-            if (errros.Any()) {
-                throw new KafkaException(errros.First().ErrorCode);
+            if (errors.Any()) {
+                throw new KafkaException(errors.First().ErrorCode);
             }
         }
 
         public Int64 OffsetFetch(String topicName, String consumerGroup) {
+            var connection = _connection.Route(topicName);
+            var partitionId = connection.CurrentPartition;
+
             var request = new OffsetFetchRequest();
             request.ConsumerGroup = consumerGroup;
             request.TopicPartitions = new[] {
                 new OffsetFetchRequestTopicPartition {
                     TopicName  = topicName,
-                    Partitions = new[] { DefaultPartition }
+                    Partitions = new[] { partitionId }
                 }
             };
 
-            var response = (OffsetFetchResponse)_connection.Invoke(request);
-            var errros = response.TopicPartitions
+            var response = (OffsetFetchResponse)((Connection)connection).Invoke(request);
+            var errors = response.TopicPartitions
                 .SelectMany(r => r.Details)
                 .Where(x => x.ErrorCode != ErrorCode.NoError);
-            if (errros.Any()) {
-                throw new KafkaException(errros.First().ErrorCode);
+            if (errors.Any()) {
+                throw new KafkaException(errors.First().ErrorCode);
             }
 
             return response.TopicPartitions[0].Details[0].Offset;
         }
 
         public IEnumerable<OffsetKeyedMessage> Fetch(String topicName, Int64 fetchOffset) {
+            var connection = _connection.Route(topicName);
+            var partitionId = connection.CurrentPartition;
+
             var request = new FetchRequest();
             request.ReplicaId = DefaultReplicaId;
             request.MaxWaitTime = 100;
@@ -122,7 +133,7 @@ namespace Chuye.Kafka {
                     TopicName          = topicName,
                     FetchOffsetDetails = new [] {
                         new FetchRequestTopicPartitionDetail {
-                            Partition   = 0,
+                            Partition   = partitionId,
                             FetchOffset = fetchOffset,
                             MaxBytes    = 60 * 1024
                         }
@@ -130,7 +141,7 @@ namespace Chuye.Kafka {
                 }
             };
 
-            var response = (FetchResponse)_connection.Invoke(request);
+            var response = (FetchResponse)((Connection)connection).Invoke(request);
             var messages = response.TopicPartitions.SelectMany(x => x.MessageBodys)
                 .SelectMany(x => x.MessageSet.Items);
 
@@ -198,9 +209,9 @@ namespace Chuye.Kafka {
             var request = new DescribeGroupsRequest();
             request.GroupId = new[] { groupId ?? _groupId };
             var response = (DescribeGroupsResponse)_connection.Invoke(request);
-            var errros = response.Details.Where(x => x.ErrorCode != ErrorCode.NoError);
-            if (errros.Any()) {
-                throw new KafkaException(errros.First().ErrorCode);
+            var errors = response.Details.Where(x => x.ErrorCode != ErrorCode.NoError);
+            if (errors.Any()) {
+                throw new KafkaException(errors.First().ErrorCode);
             }
             return response;
         }

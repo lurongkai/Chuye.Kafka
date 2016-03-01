@@ -21,6 +21,7 @@ namespace Chuye.Kafka.Protocol {
             Socket socket = null;
             foreach (var item in _availableSockets) {
                 if (item.RemoteEndPoint == null || item.RemoteEndPoint.Equals(endPoint)) {
+                    socket = item;
                     break;
                 }
             }

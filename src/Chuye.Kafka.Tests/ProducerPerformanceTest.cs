@@ -13,26 +13,33 @@ namespace Chuye.Kafka.Tests {
         public void SendMessag_Immediate() {
             Debug.Listeners.Clear();
             const String targetTopic = "immediateTopic";
-            var connection = new Router();
+            var connection = new Connection();
+            //var connection = new Router();
             var producer = new Producer(connection);
             producer.Strategy = AcknowlegeStrategy.Immediate;
-
             var stopwatch = Stopwatch.StartNew();
-            {
-                var message = String.Concat(Guid.NewGuid().ToString("n"), "#", 0);
-                //Console.WriteLine("Sending... {0}", message);
-                producer.Post(targetTopic, message);
-            }
-            for (int i = 1; i < count - 1; i++) {
+
+            //{
+            //    var message = String.Concat(Guid.NewGuid().ToString("n"), "#", 0);
+            //    //Console.WriteLine("Sending... {0}", message);
+            //    producer.Post(targetTopic, message);
+            //}
+            //for (int i = 1; i < count - 1; i++) {
+            //    var message = String.Concat(Guid.NewGuid().ToString("n"), "#", i);
+            //    //Console.WriteLine("Sending... {0}", message);
+            //    producer.Post(targetTopic, message);
+            //}
+            //{
+            //    var message = String.Concat(Guid.NewGuid().ToString("n"), "#", count);
+            //    //Console.WriteLine("Sending... {0}", message);
+            //    producer.Post(targetTopic, message);
+            //}
+
+            for (int i = 0; i < count; i++) {
                 var message = String.Concat(Guid.NewGuid().ToString("n"), "#", i);
-                //Console.WriteLine("Sending... {0}", message);
                 producer.Post(targetTopic, message);
             }
-            {
-                var message = String.Concat(Guid.NewGuid().ToString("n"), "#", count);
-                //Console.WriteLine("Sending... {0}", message);
-                producer.Post(targetTopic, message);
-            }
+
             stopwatch.Stop();
             Console.WriteLine("Handle {0} messages in {1}, {2} /sec.",
                 count, stopwatch.Elapsed, count / stopwatch.Elapsed.TotalSeconds);

@@ -90,6 +90,7 @@ namespace Chuye.Kafka {
             try {
                 socket = _socketManager.Obtain(_endPoint);
                 if (!socket.Connected) {
+                    //Debug.WriteLine("socket.Connect({0})", _endPoint);
                     socket.Connect(_endPoint);
                 }
 

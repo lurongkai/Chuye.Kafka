@@ -264,7 +264,7 @@ namespace Chuye.Kafka.Tests.Protocol {
             request.TopicPartitions = new[] {
                 new ProduceRequestTopicPartition {
                     TopicName = Guid.NewGuid().ToString(),
-                    Details =new [] {
+                    Details = new [] {
                         new ProduceRequestTopicDetail {
                             Partition = _random.Next(),
                             MessageSets = new MessageSetCollection {

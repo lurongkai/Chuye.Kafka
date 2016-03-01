@@ -48,6 +48,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="ZooKeeperNet, Version=3.4.6.1, Culture=neutral, PublicKeyToken=fefd2c046da35b56, processorArchitecture=MSIL">
       <HintPath>..\packages\ZooKeeper.Net.3.4.6.2\lib\net40\ZooKeeperNet.dll</HintPath>
       <Private>True</Private>
@@ -75,6 +76,7 @@
     <Compile Include="SerializationRequestTest.cs" />
     <Compile Include="SerializationBasicTypeTest.cs" />
     <Compile Include="SerializationResponseTest.cs" />
+    <Compile Include="KafkaConfigurationSectionTest.cs" />
     <Compile Include="ZooKeeperTest.cs" />
   </ItemGroup>
   <ItemGroup>

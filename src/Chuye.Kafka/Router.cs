@@ -22,7 +22,7 @@ namespace Chuye.Kafka {
             : base(section) {
             _section = section;
             _brokers = new HashSet<Broker>();
-            _topics = new HashSet<TopicMetadata>();
+            _topics  = new HashSet<TopicMetadata>();
         }
 
         public override IConnection Route(String topicName) {
@@ -71,23 +71,23 @@ namespace Chuye.Kafka {
             }
         }
 
-        public override TopicMetadataResponse TopicMetadata(String topicName) {
+        public override TopicMetadataResponse TopicMetadata(params String[] topicNames) {
             var attemptLimit = 5;
-            var response = base.TopicMetadata(topicName);
+            var response = base.TopicMetadata(topicNames);
             while (attemptLimit-- > 0) {
-                var metadata = response.TopicMetadatas[0];
-                if (metadata.TopicErrorCode == ErrorCode.NoError) {
+                var errors = response.TopicMetadatas.Where(r => r.TopicErrorCode != ErrorCode.NoError);
+                if (!errors.Any()) {
                     break;
                 }
-                if (metadata.TopicErrorCode != ErrorCode.LeaderNotAvailable) {
-                    throw new KafkaException(metadata.TopicErrorCode);
+                if (errors.Any(r => r.TopicErrorCode != ErrorCode.LeaderNotAvailable)) {
+                    throw new KafkaException(errors.First().TopicErrorCode);
                 }
                 //Debug.WriteLine("LeaderNotAvailable while hanlde TopicMetadata(\"{0}\")", args: topicName);
                 if (attemptLimit <= 0) {
-                    throw new KafkaException(metadata.TopicErrorCode);
+                    throw new KafkaException(errors.First().TopicErrorCode);
                 }
                 Thread.Sleep(50);
-                response = base.TopicMetadata(topicName);
+                response = base.TopicMetadata(topicNames);
             }
             return response;
         }

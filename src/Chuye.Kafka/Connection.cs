@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.ServiceModel.Channels;
+using System.Threading;
 using System.Threading.Tasks;
 using Chuye.Kafka.Protocol;
 using Chuye.Kafka.Protocol.Implement;
@@ -12,8 +13,8 @@ using Chuye.Kafka.Serialization;
 
 namespace Chuye.Kafka {
     public interface IRouter {
-        Int32 CurrentPartition { get; }
         IConnection Route(String topicName);
+        Int32 CurrentPartition { get; }
     }
 
     public interface IConnection: IRouter {
@@ -21,15 +22,57 @@ namespace Chuye.Kafka {
         Task<IResponseDispatcher> SendAsync(Request request);
     }
 
+    public class Statistic {
+        private Int64 _byteSended;
+        private Int64 _byteReceived;
+        private Int64 _requestSended;
+        private Int64 _responseRecieved;
+
+        public Int64 ByteSended {
+            get { return _byteSended; }
+        }
+        public Int64 ByteReceived {
+            get { return _byteReceived; }
+        }
+        public Int64 RequestSended {
+            get { return _requestSended; }
+        }
+        public Int64 ResponseRecieved {
+            get { return _responseRecieved; }
+        }
+
+        public void IncreaseByteSended(Int64 bytesSize) {
+            Interlocked.Add(ref _byteSended, bytesSize);
+        }
+
+        public void IncreaseByteReceived(Int64 bytesSize) {
+            Interlocked.Add(ref _byteReceived, bytesSize);
+        }
+
+        public void IncreaseRequestSended() {
+            Interlocked.Increment(ref _requestSended);
+        }
+
+        public void IncreaseResponseRecieved() {
+            Interlocked.Increment(ref _responseRecieved);
+        }
+    }
+
     public class Connection : IConnection, IDisposable {
         private readonly KafkaConfigurationSection _section;
-        private readonly IPEndPoint _endPoint;
         private readonly BufferManager _bufferManager;
         private readonly SocketManager _socketManager;
 
-        public Int64 ByteSended { get; protected set; }
-        public Int64 ByteReceived { get; protected set; }
-        public Int32 CurrentPartition { get; protected set; }
+        public static Statistic Statistic { get; private set; }
+        public Int32 CurrentPartition { get; internal set; }
+
+        static Connection() {
+            Statistic = new Statistic();
+        }
+
+        internal KafkaConfigurationSection Section {
+            get { return _section; }
+        }
 
         public Connection()
             : this(KafkaConfigurationSection.LoadDefault()) {
@@ -40,43 +83,27 @@ namespace Chuye.Kafka {
                 throw new ArgumentNullException("section");
             }
 
-            var addresses = Dns.GetHostAddresses(section.Broker.Host);
-            if (addresses.Length == 0) {
-                throw new ConfigurationErrorsException("Server ip abtain failure");
-            }
             _section = section;
-            _endPoint = new IPEndPoint(addresses[0], section.Broker.Port);
-            _bufferManager = BufferManager.CreateBufferManager(section.Buffer.MaxBufferPoolSize,
-                section.Buffer.MaxBufferSize);
+            _bufferManager = BufferManager.CreateBufferManager(section.Buffer.MaxBufferPoolSize, section.Buffer.MaxBufferSize);
             _socketManager = new SocketManager();
         }
 
-        protected Connection(String host, Int32 port, Int32 partition, BufferManager bufferManager, SocketManager socketManager) {
-            IPAddress address;
-            if (!IPAddress.TryParse(host, out address)) {
-                var addresses = Dns.GetHostAddresses(host);
-                if (addresses.Length == 0) {
-                    throw new ConfigurationErrorsException("Server ip abtain failure");
-                }
-                address = addresses[0];
-            }
+        protected Connection(String host, Int32 port, BufferManager bufferManager, SocketManager socketManager) {            
             _section = new KafkaConfigurationSection(host, port);
-            _endPoint = new IPEndPoint(address, port);
             _bufferManager = bufferManager;
             _socketManager = socketManager;
-            CurrentPartition = partition;
         }
 
         public virtual IConnection Route(String topicName) {
             return this;
         }
 
-        protected Connection Clone(String host, Int32 port, Int32 partition) {
-            return new Connection(host, port, partition, _bufferManager, _socketManager);
+        protected Connection Clone(String host, Int32 port) {
+            return new Connection(host, port, _bufferManager, _socketManager);
         }
 
         public virtual TopicMetadataResponse TopicMetadata(params String[] topicNames) {
-            if(topicNames == null || topicNames.Length == 0) {
+            if (topicNames == null) {
                 throw new ArgumentOutOfRangeException("topicNames");
             }
 
@@ -92,20 +119,16 @@ namespace Chuye.Kafka {
         }
 
         public IResponseDispatcher Send(Request request) {
-            Socket socket = null;
+            ConnectedSocket socket = null;
             Byte[] requestBytes = null;
             try {
-                socket = _socketManager.Obtain(_endPoint);
-                if (!socket.Connected) {
-                    //Debug.WriteLine("socket.Connect({0})", _endPoint);
-                    socket.Connect(_endPoint);
-                }
-
+                socket = _socketManager.Obtain(_section.Broker.Host, _section.Broker.Port);
                 requestBytes = _bufferManager.TakeBuffer(_section.Buffer.RequestBufferSize);
                 var requestBytesCount = request.Serialize(requestBytes, 0);
                 //Debug.WriteLine(String.Join(" ", requestBytes.Take(requestBytesCount)));
-                socket.Send(requestBytes, 0, requestBytesCount, SocketFlags.None);
-                ByteSended += requestBytesCount;
+                socket.Socket.Send(requestBytes, 0, requestBytesCount, SocketFlags.None);
+                Statistic.IncreaseRequestSended();
+                Statistic.IncreaseByteSended(requestBytesCount);
 
                 var produceRequest = request as ProduceRequest;
                 if (produceRequest != null && produceRequest.RequiredAcks == AcknowlegeStrategy.Immediate) {
@@ -114,7 +137,7 @@ namespace Chuye.Kafka {
 
                 const Int32 lengthBytesSize = 4;
                 var responseBytes = _bufferManager.TakeBuffer(_section.Buffer.ResponseBufferSize);
-                var beginningBytesReceived = socket.Receive(responseBytes, 0, lengthBytesSize, SocketFlags.None);
+                var beginningBytesReceived = socket.Socket.Receive(responseBytes, 0, lengthBytesSize, SocketFlags.None);
                 if (beginningBytesReceived < lengthBytesSize) {
                     throw new SocketException((Int32)SocketError.SocketError);
                 }
@@ -124,13 +147,14 @@ namespace Chuye.Kafka {
                 var receivedBodyBytesSize = 0;
 
                 while (receivedBodyBytesSize < expectedBodyBytesSize) {
-                    receivedBodyBytesSize += socket.Receive(responseBytes,
+                    receivedBodyBytesSize += socket.Socket.Receive(responseBytes,
                         lengthBytesSize + receivedBodyBytesSize,
                         expectedBodyBytesSize - receivedBodyBytesSize,
                         SocketFlags.None);
                     //Debug.WriteLine("Actually body bytes received {0}", receivedBodyBytesSize);
                 }
-                ByteReceived += beginningBytesReceived + receivedBodyBytesSize;
+                Statistic.IncreaseResponseRecieved();
+                Statistic.IncreaseByteReceived(beginningBytesReceived + receivedBodyBytesSize);
                 return new ReponseDispatcher(request.ApiKey, responseBytes, _bufferManager);
             }
             finally {
@@ -148,10 +172,11 @@ namespace Chuye.Kafka {
             try {
                 requestBytes = _bufferManager.TakeBuffer(_section.Buffer.RequestBufferSize);
                 var requestBytesCount = request.Serialize(requestBytes, 0);
-                using (var tcpClient = new TcpClient(_endPoint))
+                using (var tcpClient = new TcpClient(_section.Broker.Host, _section.Broker.Port))
                 using (var stream = tcpClient.GetStream()) {
                     await stream.WriteAsync(requestBytes, 0, requestBytesCount);
-                    ByteSended += requestBytesCount;
+                    Statistic.IncreaseRequestSended();
+                    Statistic.IncreaseByteSended(requestBytesCount);
                     var produceRequest = request as ProduceRequest;
                     if (produceRequest != null && produceRequest.RequiredAcks == AcknowlegeStrategy.Immediate) {
                         stream.Close();
@@ -175,7 +200,8 @@ namespace Chuye.Kafka {
                             expectedBodyBytesSize - receivedBodyBytesSize);
                         //Debug.WriteLine("Actually body bytes received {0}", receivedBodyBytesSize);
                     }
-                    ByteReceived += beginningBytesReceived + expectedBodyBytesSize;
+                    Statistic.IncreaseResponseRecieved();
+                    Statistic.IncreaseByteReceived(beginningBytesReceived + receivedBodyBytesSize);
                     //var responseBytes = new Byte[lengthBytesSize + receivedBodyBytesSize];
                     //Array.Copy(responseBuffer.Segment.Array, responseBuffer.Segment.Offset, responseBytes, 0, responseBytes.Length);
                     return new ReponseDispatcher(request.ApiKey, responseBytes, _bufferManager);

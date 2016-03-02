@@ -8,19 +8,49 @@ using System.Collections.Concurrent;
 using System.Net;
 
 namespace Chuye.Kafka.Serialization {
-    public class SocketManager : IDisposable {
-        private readonly HashSet<Socket> _availableSockets;
-        private readonly HashSet<Socket> _activeSockets;
+    public class ConnectedSocket : IEquatable<ConnectedSocket> {
+        public String Host { get; private set; }
+        public Int32 Port { get; private set; }
+        public Socket Socket { get; set; }
 
-        public SocketManager() {
-            _availableSockets = new HashSet<Socket>();
-            _activeSockets = new HashSet<Socket>();
+        public ConnectedSocket(String host, Int32 port, Socket socket) {
+            Host = host;
+            Port = port;
+            Socket = socket;
         }
 
-        public Socket Obtain(IPEndPoint endPoint) {
-            Socket socket = null;
+        public Boolean Equals(ConnectedSocket other) {
+            return other != null
+                && (Host.Equals(other.Host, StringComparison.Ordinal))
+                && (Port == Port);
+        }
+
+        public override Boolean Equals(Object obj) {
+            return obj != null
+                && obj is ConnectedSocket
+                && Equals((ConnectedSocket)obj);
+        }
+
+        public override Int32 GetHashCode() {
+            return (Host != null ? Host.GetHashCode() : 0)
+                ^ Port.GetHashCode()
+                ^ Socket.GetHashCode();
+        }
+    }
+
+    public class SocketManager : IDisposable {
+        private readonly HashSet<ConnectedSocket> _availableSockets;
+        private readonly HashSet<ConnectedSocket> _activeSockets;
+
+        public SocketManager() {
+            _availableSockets = new HashSet<ConnectedSocket>();
+            _activeSockets = new HashSet<ConnectedSocket>();
+        }
+
+        public ConnectedSocket Obtain(String host, Int32 port) {
+            ConnectedSocket socket = null;
             foreach (var item in _availableSockets) {
-                if (item.RemoteEndPoint == null || item.RemoteEndPoint.Equals(endPoint)) {
+                if (item.Host == host && item.Port == port) {
                     socket = item;
                     break;
                 }
@@ -32,12 +62,13 @@ namespace Chuye.Kafka.Serialization {
                 return socket;
             }
 
-            socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            socket = new ConnectedSocket(host, port, new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp));
+            socket.Socket.Connect(host, port);
             _activeSockets.Add(socket);
             return socket;
         }
 
-        public void Release(Socket socket) {
+        public void Release(ConnectedSocket socket) {
             if (!_activeSockets.Remove(socket)) {
                 throw new InvalidOperationException("Anonymous socket release not supported");
             }
@@ -46,11 +77,11 @@ namespace Chuye.Kafka.Serialization {
 
         public void Dispose() {
             foreach (var socket in _availableSockets) {
-                socket.Close();
+                socket.Socket.Close();
             }
             _availableSockets.Clear();
             foreach (var socket in _activeSockets) {
-                socket.Close();
+                socket.Socket.Close();
             }
             _activeSockets.Clear();
         }

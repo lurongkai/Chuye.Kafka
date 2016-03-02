@@ -16,9 +16,9 @@ namespace Chuye.Kafka {
 
         public override String ToString() {
             if (Key == null) {
-                return Message;
+                return String.Format("{{\"value\":\"{0}\"}}", Message);
             }
-            return String.Format("#{0}# {1}", Key, Message);
+            return String.Format("{{\"key\":\"{0}\",\"value\":\"{1}\"}}", Key, Message);
         }
 
         public Boolean Equals(KeyedMessage other) {
@@ -61,9 +61,11 @@ namespace Chuye.Kafka {
 
         public override String ToString() {
             if (Key == null) {
-                return String.Format("{0}\t{1}", Offset, Message);
+                return String.Format("{{\"offset\":{0},\"value\":\"{1}\"}}", 
+                    Offset, Message);
             }
-            return String.Format("{0}\t#{1}#\t\t{2}", Offset, Key, Message);
+            return String.Format("{{\"offset\":{0},\"key\":\"{1}\",\"value\":\"{2}\"}}",
+                Offset, Key, Message);
         }
     }
 }

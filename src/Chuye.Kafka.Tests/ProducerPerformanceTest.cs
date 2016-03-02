@@ -12,7 +12,7 @@ namespace Chuye.Kafka.Tests {
         [TestMethod]
         public void SendMessag_Immediate() {
             const String demoTopic = "demoTopic";
-            var connection = new Connection();
+            var connection = new Router();
             connection.TopicMetadata(demoTopic);
             var producer = new Producer(connection);
             producer.Strategy = AcknowlegeStrategy.Immediate;
@@ -27,15 +27,14 @@ namespace Chuye.Kafka.Tests {
                 count, stopwatch.Elapsed,
                 count / stopwatch.Elapsed.TotalSeconds);
             Console.WriteLine("Bytes sended {0:f2} MB, {1:f2} MB/spc.",
-                //connection.ByteSended >> 20, (connection.ByteSended >> 20) / stopwatch.Elapsed.TotalSeconds);
-                connection.ByteSended / 1048576.0,
-                connection.ByteSended / 1048576.0 / stopwatch.Elapsed.TotalSeconds);
+                Connection.Statistic.ByteSended / 1048576.0,
+                Connection.Statistic.ByteSended / 1048576.0 / stopwatch.Elapsed.TotalSeconds);
         }
 
         [TestMethod]
         public void SendMessag_Written() {
             const String demoTopic = "demoTopic";
-            var connection = new Connection();
+            var connection = new Router();
             connection.TopicMetadata(demoTopic);
             var producer = new Producer(connection);
             producer.Strategy = AcknowlegeStrategy.Written;
@@ -50,9 +49,8 @@ namespace Chuye.Kafka.Tests {
                 count, stopwatch.Elapsed,
                 count / stopwatch.Elapsed.TotalSeconds);
             Console.WriteLine("Bytes sended {0:f2} MB, {1:f2} MB/spc.",
-                //connection.ByteSended >> 20, (connection.ByteSended >> 20) / stopwatch.Elapsed.TotalSeconds);
-                connection.ByteSended / 1048576.0,
-                connection.ByteSended / 1048576.0 / stopwatch.Elapsed.TotalSeconds);
+                Connection.Statistic.ByteSended / 1048576.0,
+                Connection.Statistic.ByteSended / 1048576.0 / stopwatch.Elapsed.TotalSeconds);
         }
     }
 }

@@ -58,7 +58,7 @@ namespace Chuye.Kafka.Protocol.Implement {
             request.TopicPartitions = new[] {
                 new ProduceRequestTopicPartition {
                     TopicName = topicName,
-                    Details =new [] {
+                    Details = new [] {
                         new ProduceRequestTopicDetail {
                             Partition = partition,
                             MessageSets = new MessageSetCollection {

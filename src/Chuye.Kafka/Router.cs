@@ -47,7 +47,12 @@ namespace Chuye.Kafka {
             if (topicPartitionsCached.Length == 1) {
                 var topicPartitionSelected = topicPartitionsCached[0];
                 var broker = _brokers.SingleOrDefault(b => b.NodeId == topicPartitionSelected.Leader);
-                return Clone(broker.Host, broker.Port, topicPartitionSelected.PartitionId);
+                if (broker.Host == _section.Broker.Host && broker.Port == _section.Broker.Port) {
+                    return this;
+                }
+                var connection = Clone(broker.Host, broker.Port);
+                connection.CurrentPartition = topicPartitionSelected.PartitionId;
+                return connection;
             }
 
             var topicPartitionSettings = _section.TopicPartitions.OfType<TopicPartitionConfigurationElement>();
@@ -56,7 +61,12 @@ namespace Chuye.Kafka {
             if (topicPartitionSetting == null) {
                 var topicPartitionSelected = topicPartitionsCached.OrderBy(r => r.PartitionId).First();
                 var broker = _brokers.SingleOrDefault(b => b.NodeId == topicPartitionSelected.Leader);
-                return Clone(broker.Host, broker.Port, topicPartitionSelected.PartitionId);
+                if (broker.Host == _section.Broker.Host && broker.Port == _section.Broker.Port) {
+                    return this;
+                }
+                var connection = Clone(broker.Host, broker.Port);
+                connection.CurrentPartition = topicPartitionSelected.PartitionId;
+                return connection;
             }
 
             //topicPartitionsCached.Length > 1 && topicPartitionSetting != null, 自定义 Partition 路由生效
@@ -65,9 +75,13 @@ namespace Chuye.Kafka {
                 if (topicPartitionSelected == null) {
                     throw new Exception(); //todo
                 }
-                CurrentPartition = topicPartitionSelected.PartitionId;
                 var broker = _brokers.SingleOrDefault(b => b.NodeId == topicPartitionSelected.Leader);
-                return Clone(broker.Host, broker.Port, topicPartitionSelected.PartitionId);
+                if (broker.Host == _section.Broker.Host && broker.Port == _section.Broker.Port) {
+                    return this;
+                }
+                var connection = Clone(broker.Host, broker.Port);
+                connection.CurrentPartition = topicPartitionSelected.PartitionId;
+                return connection;
             }
         }
 

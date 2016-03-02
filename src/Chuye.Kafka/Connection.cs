@@ -31,6 +31,10 @@ namespace Chuye.Kafka {
         public Int64 ByteReceived { get; protected set; }
         public Int32 CurrentPartition { get; protected set; }
 
+        internal KafkaConfigurationSection Section {
+            get { return _section; }
+        }
+
         public Connection()
             : this(KafkaConfigurationSection.LoadDefault()) {
         }

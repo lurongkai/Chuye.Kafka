@@ -39,8 +39,8 @@ namespace Chuye.Kafka {
             var connection = _connection.Route(topicName);
             var partitionId = connection.CurrentPartition;
 
-            var request = new OffsetRequest();
-            request.ReplicaId = DefaultReplicaId;
+            var request             = new OffsetRequest();
+            request.ReplicaId       = DefaultReplicaId;
             request.TopicPartitions = new[] {
                  new OffsetsRequestTopicPartition {
                      TopicName = topicName,
@@ -72,8 +72,8 @@ namespace Chuye.Kafka {
             var connection = _connection.Route(topicName);
             var partitionId = connection.CurrentPartition;
 
-            var request = new OffsetCommitRequestV0();
-            request.ConsumerGroup = consumerGroup;
+            var request             = new OffsetCommitRequestV0();
+            request.ConsumerGroup   = consumerGroup;
             request.TopicPartitions = new OffsetCommitRequestTopicPartitionV0[1];
             request.TopicPartitions = new[] {
                 new OffsetCommitRequestTopicPartitionV0 {
@@ -100,8 +100,8 @@ namespace Chuye.Kafka {
             var connection = _connection.Route(topicName);
             var partitionId = connection.CurrentPartition;
 
-            var request = new OffsetFetchRequest();
-            request.ConsumerGroup = consumerGroup;
+            var request             = new OffsetFetchRequest();
+            request.ConsumerGroup   = consumerGroup;
             request.TopicPartitions = new[] {
                 new OffsetFetchRequestTopicPartition {
                     TopicName  = topicName,
@@ -121,13 +121,14 @@ namespace Chuye.Kafka {
         }
 
         public IEnumerable<OffsetKeyedMessage> Fetch(String topicName, Int64 fetchOffset) {
-            var connection = _connection.Route(topicName);
+            var connection  = _connection.Route(topicName);
             var partitionId = connection.CurrentPartition;
+            var maxBytes    = (_connection.Section.Buffer.ResponseBufferSize / 1024 - 1) * 1024;
 
-            var request = new FetchRequest();
-            request.ReplicaId = DefaultReplicaId;
-            request.MaxWaitTime = 100;
-            request.MinBytes = 4096;
+            var request             = new FetchRequest();
+            request.ReplicaId       = DefaultReplicaId;
+            request.MaxWaitTime     = 100;
+            request.MinBytes        = 4096;
             request.TopicPartitions = new[] {
                 new FetchRequestTopicPartition {
                     TopicName          = topicName,
@@ -135,7 +136,7 @@ namespace Chuye.Kafka {
                         new FetchRequestTopicPartitionDetail {
                             Partition   = partitionId,
                             FetchOffset = fetchOffset,
-                            MaxBytes    = 60 * 1024
+                            MaxBytes    = maxBytes
                         }
                     }
                 }
@@ -165,9 +166,9 @@ namespace Chuye.Kafka {
         }
 
         public void GroupCoordinator(String groupId) {
-            var request = new GroupCoordinatorRequest();
+            var request     = new GroupCoordinatorRequest();
             request.GroupId = groupId;
-            var response = (GroupCoordinatorResponse)_connection.Invoke(request);
+            var response    = (GroupCoordinatorResponse)_connection.Invoke(request);
             if (response.ErrorCode != ErrorCode.NoError) {
                 throw new KafkaException(response.ErrorCode);
             }

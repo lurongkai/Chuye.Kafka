@@ -52,7 +52,7 @@
     <Compile Include="KeyedMessage.cs" />
     <Compile Include="Producer.cs" />
     <Compile Include="Protocol\ReponseDispatcher.cs" />
-    <Compile Include="Protocol\SocketManager.cs" />
+    <Compile Include="Serialization\SocketManager.cs" />
     <Compile Include="KafkaConfigurationSection.cs" />
     <Compile Include="Router.cs" />
     <Compile Include="Serialization\BufferReaderExtension.cs" />

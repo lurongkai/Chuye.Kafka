@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 namespace Chuye.Kafka {
     class Program {
-        const String DemoTopic = "demoTopic2";
+        const String DemoTopic = "demoTopic";
         const String DemoGroup = "demoConsumerGroup";
         static Connection _connection;
 
@@ -16,8 +16,8 @@ namespace Chuye.Kafka {
             _connection = new Router();
 
             //Client_TopicMetadata_Demo();
-            Producer_Post_Demo();
-            Consumer_Offset_Fetch_Demo();
+            //Producer_Post_Demo();
+            //Consumer_Offset_Fetch_Demo();
             //Producer_Post_Immediate_Benchmark();
             //Producer_Post_Written_Benchmark();
             //Consumer_Group_Operate();

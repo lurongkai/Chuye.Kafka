@@ -22,14 +22,13 @@ namespace Chuye.Kafka {
     }
 
     public class Connection : IConnection, IDisposable {
-
-        private const String IpRegexPattern = "\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b";
-
         private readonly KafkaConfigurationSection _section;
         private readonly IPEndPoint _endPoint;
         private readonly BufferManager _bufferManager;
         private readonly SocketManager _socketManager;
 
+        public Int64 ByteSended { get; protected set; }
+        public Int64 ByteReceived { get; protected set; }
         public Int32 CurrentPartition { get; protected set; }
 
         public Connection()
@@ -53,15 +52,19 @@ namespace Chuye.Kafka {
         }
 
         protected Connection(String host, Int32 port, Int32 partition, BufferManager bufferManager, SocketManager socketManager) {
-            var addresses = Dns.GetHostAddresses(host);
-            if (addresses.Length == 0) {
-                throw new ConfigurationErrorsException("Server ip abtain failure");
+            IPAddress address;
+            if (!IPAddress.TryParse(host, out address)) {
+                var addresses = Dns.GetHostAddresses(host);
+                if (addresses.Length == 0) {
+                    throw new ConfigurationErrorsException("Server ip abtain failure");
+                }
+                address = addresses[0];
             }
             _section = new KafkaConfigurationSection(host, port);
-            _endPoint = new IPEndPoint(addresses[0], port);
-            CurrentPartition = partition;
+            _endPoint = new IPEndPoint(address, port);
             _bufferManager = bufferManager;
             _socketManager = socketManager;
+            CurrentPartition = partition;
         }
 
         public virtual IConnection Route(String topicName) {
@@ -72,9 +75,13 @@ namespace Chuye.Kafka {
             return new Connection(host, port, partition, _bufferManager, _socketManager);
         }
 
-        public virtual TopicMetadataResponse TopicMetadata(String topicName) {
+        public virtual TopicMetadataResponse TopicMetadata(params String[] topicNames) {
+            if(topicNames == null || topicNames.Length == 0) {
+                throw new ArgumentOutOfRangeException("topicNames");
+            }
+
             var request = new TopicMetadataRequest();
-            request.TopicNames = new[] { topicName };
+            request.TopicNames = topicNames;
             var response = (TopicMetadataResponse)Invoke(request);
             var errors = response.TopicMetadatas
                 .Where(x => x.TopicErrorCode != ErrorCode.NoError);
@@ -90,6 +97,7 @@ namespace Chuye.Kafka {
             try {
                 socket = _socketManager.Obtain(_endPoint);
                 if (!socket.Connected) {
+                    //Debug.WriteLine("socket.Connect({0})", _endPoint);
                     socket.Connect(_endPoint);
                 }
 
@@ -97,6 +105,7 @@ namespace Chuye.Kafka {
                 var requestBytesCount = request.Serialize(requestBytes, 0);
                 //Debug.WriteLine(String.Join(" ", requestBytes.Take(requestBytesCount)));
                 socket.Send(requestBytes, 0, requestBytesCount, SocketFlags.None);
+                ByteSended += requestBytesCount;
 
                 var produceRequest = request as ProduceRequest;
                 if (produceRequest != null && produceRequest.RequiredAcks == AcknowlegeStrategy.Immediate) {
@@ -121,6 +130,7 @@ namespace Chuye.Kafka {
                         SocketFlags.None);
                     //Debug.WriteLine("Actually body bytes received {0}", receivedBodyBytesSize);
                 }
+                ByteReceived += beginningBytesReceived + receivedBodyBytesSize;
                 return new ReponseDispatcher(request.ApiKey, responseBytes, _bufferManager);
             }
             finally {
@@ -132,51 +142,7 @@ namespace Chuye.Kafka {
                 }
             }
         }
-
-        public IResponseDispatcher Send_(Request request) {
-            Byte[] requestBytes = null;
-            try {
-                requestBytes = _bufferManager.TakeBuffer(_section.Buffer.RequestBufferSize);
-                var requestBytesCount = request.Serialize(requestBytes, 0);
-                using (var tcpClient = new TcpClient(_endPoint))
-                using (var stream = tcpClient.GetStream()) {
-                    stream.Write(requestBytes, 0, requestBytesCount);
-                    var produceRequest = request as ProduceRequest;
-                    if (produceRequest != null && produceRequest.RequiredAcks == AcknowlegeStrategy.Immediate) {
-                        return null;
-                    }
-
-                    const Int32 lengthBytesSize = 4;
-                    var responseBytes = _bufferManager.TakeBuffer(_section.Buffer.ResponseBufferSize);
-                    var beginningBytesReceived = stream.Read(responseBytes, 0, lengthBytesSize);
-
-                    if (beginningBytesReceived < lengthBytesSize) {
-                        throw new SocketException((Int32)SocketError.SocketError);
-                    }
-                    var expectedBodyReader = new BufferReader(responseBytes, 0);
-                    var expectedBodyBytesSize = expectedBodyReader.ReadInt32();
-                    //Debug.WriteLine("Expected body bytes size is {0}", expectedBodyBytesSize);
-                    var receivedBodyBytesSize = 0;
-
-                    while (receivedBodyBytesSize < expectedBodyBytesSize) {
-                        receivedBodyBytesSize += stream.Read(responseBytes,
-                            lengthBytesSize + receivedBodyBytesSize,
-                            expectedBodyBytesSize - receivedBodyBytesSize);
-                        //Debug.WriteLine("Actually body bytes received {0}", receivedBodyBytesSize);
-                    }
-
-                    //var responseBytes = new Byte[lengthBytesSize + receivedBodyBytesSize];
-                    //Array.Copy(responseBuffer.Segment.Array, responseBuffer.Segment.Offset, responseBytes, 0, responseBytes.Length);
-                    return new ReponseDispatcher(request.ApiKey, responseBytes, _bufferManager);
-                }
-            }
-            finally {
-                if (requestBytes != null) {
-                    _bufferManager.ReturnBuffer(requestBytes);
-                }
-            }
-        }
-
+        
         public async Task<IResponseDispatcher> SendAsync(Request request) {
             Byte[] requestBytes = null;
             try {
@@ -185,6 +151,7 @@ namespace Chuye.Kafka {
                 using (var tcpClient = new TcpClient(_endPoint))
                 using (var stream = tcpClient.GetStream()) {
                     await stream.WriteAsync(requestBytes, 0, requestBytesCount);
+                    ByteSended += requestBytesCount;
                     var produceRequest = request as ProduceRequest;
                     if (produceRequest != null && produceRequest.RequiredAcks == AcknowlegeStrategy.Immediate) {
                         stream.Close();
@@ -208,7 +175,7 @@ namespace Chuye.Kafka {
                             expectedBodyBytesSize - receivedBodyBytesSize);
                         //Debug.WriteLine("Actually body bytes received {0}", receivedBodyBytesSize);
                     }
-
+                    ByteReceived += beginningBytesReceived + expectedBodyBytesSize;
                     //var responseBytes = new Byte[lengthBytesSize + receivedBodyBytesSize];
                     //Array.Copy(responseBuffer.Segment.Array, responseBuffer.Segment.Offset, responseBytes, 0, responseBytes.Length);
                     return new ReponseDispatcher(request.ApiKey, responseBytes, _bufferManager);

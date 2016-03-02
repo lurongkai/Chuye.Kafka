@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.Collections.Concurrent;
 using System.Net;
 
-namespace Chuye.Kafka.Protocol {
+namespace Chuye.Kafka.Serialization {
     public class SocketManager : IDisposable {
         private readonly HashSet<Socket> _availableSockets;
         private readonly HashSet<Socket> _activeSockets;
@@ -21,6 +21,7 @@ namespace Chuye.Kafka.Protocol {
             Socket socket = null;
             foreach (var item in _availableSockets) {
                 if (item.RemoteEndPoint == null || item.RemoteEndPoint.Equals(endPoint)) {
+                    socket = item;
                     break;
                 }
             }
@@ -37,7 +38,9 @@ namespace Chuye.Kafka.Protocol {
         }
 
         public void Release(Socket socket) {
-            _activeSockets.Remove(socket);
+            if (!_activeSockets.Remove(socket)) {
+                throw new InvalidOperationException("Anonymous socket release not supported");
+            }
             _availableSockets.Add(socket);
         }
 

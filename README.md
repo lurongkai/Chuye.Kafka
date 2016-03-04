@@ -12,7 +12,7 @@ PM> Install-Package Chuye.Kafka
 单虚拟机 Producer immediate 模式下适量合并消息轻松达到10万条+/秒，见脚本部分
 
 ##反馈
-在使用中有任何问题，欢迎交流 jusfr.w@gmail.com
+在使用中有任何问题，欢迎交流 jusfr.v@gmail.com
 
 ##计划
 
@@ -24,7 +24,8 @@ PM> Install-Package Chuye.Kafka
 * 如何连接到 Broker 集群： Kafka 通过 TopicMeatadata 进行自描述，使用 Connection 的地方以 Router 替换即可；
 * 消费者分组： Kafka 语义下的发布订阅模式——同组消费者被分配到 Topic 的不同 Partition 及 Reblance 逻辑严重依赖 Zookeepr，本质上是客户端编程实现的，其 high-level-api 消费者对 Offset 进行了定时/条件提交，Chuye.Kafka 并没有依样实现，而是以 Conumser 的轻量封装替代，用户可以在各场景下实现更精细的控制；
   分组带来的读写时的 Partition 显示指定问题，Kafka 文档里也没有给出很好的方案，Chuye.Kafka 实现了基于配置的策略，使客户端可以固定读写某分组而不是分区算法；
-* Connection 对象的管理：它持有了 Socket 池与 Buffer 池以解决 Socket.Connect() 与 Byte[] 分配造成的性能问题，需要与应用程序的生命周期相同
+* Topic 在哪里管理：这涉及到 Zookeepr 的操作，列在计划之中了；  
+* Connection 对象的管理：它持有了 Socket 池与 Buffer 池以解决 Socket.Connect() 与 Byte[] 分配造成的性能问题，需要与应用程序的生命周期相同；
 
 ##示例
 来自 $/doc/Chuye.Kafka-high-level-api.linq，移除 .Dump() 语法则是常规代码片段

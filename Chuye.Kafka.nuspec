@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>Chuye.Kafka</id>
+    <version>0.9</version>
+    <title>Chuye.Kafka</title>
+    <authors>jusfr</authors>
+    <owners>jusfr</owners>
+    <licenseUrl>https://github.com/jusfr/Chuye.Kafka/LICENSE</licenseUrl>
+    <projectUrl>https://github.com/jusfr/Chuye.Kafka</projectUrl>
+    <iconUrl>https://www.nuget.org/Content/Images/packageDefaultIcon.png</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>.Net driver for kafka</description>
+    <releaseNotes>This is a initial release.</releaseNotes>
+    <copyright>Copyright 2016</copyright>
+    <tags>Chuye Kakfa</tags>
+    <dependencies></dependencies>
+  </metadata>
+  <files>
+    <file src="src\Chuye.Kafka\bin\Release\Chuye.kafka.dll" target="lib" />
+    <file src="src\Chuye.Kafka\bin\Release\Chuye.kafka.pdb" target="lib" />
+  </files>
+</package>
